@@ -12,6 +12,7 @@ using Datadog.Trace.AppSec;
 using Datadog.Trace.Configuration;
 using Datadog.Trace.DogStatsd;
 using Datadog.Trace.Logging;
+using Datadog.Trace.Logging.DirectSubmission;
 using Datadog.Trace.PlatformHelpers;
 using Datadog.Trace.RuntimeMetrics;
 using Datadog.Trace.Sampling;
@@ -329,6 +330,18 @@ namespace Datadog.Trace
                     writer.WritePropertyName("appsec_libddwaf_version");
                     writer.WriteValue(Security.Instance.DdlibWafVersion?.ToString() ?? "(none)");
 
+                    writer.WritePropertyName("direct_logs_submission_enabled_integrations");
+                    writer.WriteStartArray();
+
+                    foreach (var integration in DirectLogSubmission.Instance.Settings.EnabledIntegrationNames)
+                    {
+                        writer.WriteValue(integration);
+                    }
+
+                    writer.WriteEndArray();
+
+                    writer.WritePropertyName("direct_logs_submission_error");
+                    writer.WriteValue(DirectLogSubmission.Instance.Settings.ValidationErrors.Count != 0);
                     writer.WriteEndObject();
                     // ReSharper restore MethodHasAsyncOverload
                 }
@@ -354,7 +367,7 @@ namespace Datadog.Trace
             if (_firstInitialization)
             {
                 _firstInitialization = false;
-                OneTimeSetup();
+                OneTimeSetup(newManager);
             }
 
             if (newManager.Settings.StartupDiagnosticLogEnabled)
@@ -365,13 +378,15 @@ namespace Datadog.Trace
             return newManager;
         }
 
-        private static void OneTimeSetup()
+        private static void OneTimeSetup(TracerManager newManager)
         {
             // Register callbacks to make sure we flush the traces before exiting
             LifetimeManager.Instance.AddShutdownTask(RunShutdownTasks);
 
             // start the heartbeat loop
             _heartbeatTimer = new Timer(HeartbeatCallback, state: null, dueTime: TimeSpan.Zero, period: TimeSpan.FromMinutes(1));
+
+            ConfigureDirectLogSubmission(newManager.Settings, newManager.DefaultServiceName);
         }
 
         private static void RunShutdownTasks()
@@ -380,6 +395,7 @@ namespace Datadog.Trace
             {
                 _instance?.AgentWriter.FlushAndCloseAsync().Wait();
                 _heartbeatTimer?.Dispose();
+                DirectLogSubmission.Instance?.Dispose();
             }
             catch (Exception ex)
             {
@@ -393,6 +409,29 @@ namespace Datadog.Trace
             // to estimate the number of "live" Tracers than can potentially
             // send traces to the Agent
             _instance?.Statsd?.Gauge(TracerMetricNames.Health.Heartbeat, Tracer.LiveTracerCount);
+        }
+
+        private static void ConfigureDirectLogSubmission(TracerSettings tracerSettings, string serviceName)
+        {
+            // TODO: Should we load the API key in a normal way? We don't for AAS?
+            var apiKey = Environment.GetEnvironmentVariable(ConfigurationKeys.ApiKey);
+            var settings = DirectLogSubmissionSettings.Create(tracerSettings, apiKey, serviceName);
+            DirectLogSubmission.Instance = DirectLogSubmission.Create(settings);
+
+            var directLogSubmissionEnabled = settings.IsEnabled;
+            foreach (var validationError in settings.ValidationErrors)
+            {
+                // We managed to enable log submission, but there were some problems
+                if (directLogSubmissionEnabled)
+                {
+                    Log.Warning("Found problem in direct log submission configuration: " + validationError);
+                }
+                else
+                {
+                    // We couldn't enable log submission even though they tried to configure it
+                    Log.Error("Error configuring direct log submission: " + validationError);
+                }
+            }
         }
     }
 }
