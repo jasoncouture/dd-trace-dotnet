@@ -38,5 +38,6 @@ namespace Datadog.Trace.Configuration
         AzureFunctions,
         Serilog,
         Log4Net,
+        NLog,
     }
 }
