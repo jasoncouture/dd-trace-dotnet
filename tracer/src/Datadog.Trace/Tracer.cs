@@ -31,7 +31,7 @@ namespace Datadog.Trace
 
         private static Tracer _instance;
         private static bool _globalInstanceInitialized;
-        private static object _globalInstanceLock = new object();
+        private static object _globalInstanceLock = new();
 
         private readonly TracerManager _tracerManager;
 
@@ -307,38 +307,10 @@ namespace Datadog.Trace
         /// <returns>The newly created span</returns>
         internal Span StartSpan(string operationName, ISpanContext parent = null, string serviceName = null, DateTimeOffset? startTime = null, bool ignoreActiveScope = false)
         {
-            return StartSpan(operationName, tags: null, parent, serviceName, startTime, ignoreActiveScope, spanId: null);
+            return StartSpan(operationName, tags: null, parent, serviceName, startTime, ignoreActiveScope);
         }
 
-        internal SpanContext CreateSpanContext(ISpanContext parent = null, string serviceName = null, bool ignoreActiveScope = false, ulong? traceId = null, ulong? spanId = null)
-        {
-            if (parent == null && !ignoreActiveScope)
-            {
-                parent = DistributedTracer.Instance.GetSpanContext() ?? TracerManager.ScopeManager.Active?.Span?.Context;
-            }
-
-            ITraceContext traceContext;
-
-            // try to get the trace context (from local spans) or
-            // sampling priority (from propagated spans),
-            // otherwise start a new trace context
-            if (parent is SpanContext parentSpanContext)
-            {
-                traceContext = parentSpanContext.TraceContext ??
-                    new TraceContext(this) { SamplingPriority = parentSpanContext.SamplingPriority };
-            }
-            else
-            {
-                traceContext = new TraceContext(this);
-            }
-
-            var finalServiceName = serviceName ?? parent?.ServiceName ?? DefaultServiceName;
-            var spanContext = new SpanContext(parent, traceContext, finalServiceName, traceId: traceId, spanId: spanId);
-
-            return spanContext;
-        }
-
-        internal Scope StartActiveInternal(string operationName, ISpanContext parent = null, string serviceName = null, DateTimeOffset? startTime = null, bool ignoreActiveScope = false, bool finishOnClose = true, ITags tags = null, ulong? spanId = null)
+        internal Scope StartActiveInternal(string operationName, ISpanContext parent = null, string serviceName = null, DateTimeOffset? startTime = null, bool ignoreActiveScope = false, bool finishOnClose = true, ITags tags = null)
         {
             var span = StartSpan(operationName, tags, parent, serviceName, startTime, ignoreActiveScope);
             return TracerManager.ScopeManager.Activate(span, finishOnClose);
@@ -346,12 +318,18 @@ namespace Datadog.Trace
 
         internal Span StartSpan(string operationName, ITags tags, ISpanContext parent = null, string serviceName = null, DateTimeOffset? startTime = null, bool ignoreActiveScope = false, ulong? traceId = null, ulong? spanId = null, bool addToTraceContext = true)
         {
-            var spanContext = CreateSpanContext(parent, serviceName, ignoreActiveScope, traceId, spanId);
-
-            var span = new Span(spanContext, startTime, tags)
+            if (parent == null && !ignoreActiveScope)
             {
-                OperationName = operationName,
-            };
+                parent = (ISpanContext)DistributedTracer.Instance.GetSpanContext() ?? TracerManager.ScopeManager.Active?.Span;
+            }
+
+            ITraceContext traceContext = new TraceContext(this, traceId);
+
+            var span = new Span(parent, traceContext, spanId, startTime, tags)
+                       {
+                           OperationName = operationName,
+                           ServiceName = serviceName ?? DefaultServiceName,
+                       };
 
             // Apply any global tags
             if (Settings.GlobalTags.Count > 0)
@@ -371,14 +349,14 @@ namespace Datadog.Trace
 
             // automatically add the "version" tag if defined, taking precedence over an "version" tag set from a global tag
             var version = Settings.ServiceVersion;
-            if (!string.IsNullOrWhiteSpace(version) && string.Equals(spanContext.ServiceName, DefaultServiceName))
+            if (!string.IsNullOrWhiteSpace(version) && string.Equals(span.ServiceName, DefaultServiceName))
             {
                 span.SetTag(Tags.Version, version);
             }
 
             if (addToTraceContext)
             {
-                spanContext.TraceContext.AddSpan(span);
+                span.TraceContext.AddSpan(span);
             }
 
             return span;

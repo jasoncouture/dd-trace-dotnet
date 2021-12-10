@@ -28,8 +28,7 @@ namespace Datadog.Trace.ClrProfiler
 
             var parent = scope?.Span;
 
-            if (parent != null &&
-                parent.Type == SpanTypes.Http &&
+            if (parent is { Type: SpanTypes.Http } &&
                 parent.GetTag(Tags.InstrumentationName) != null)
             {
                 return scope;
@@ -99,25 +98,25 @@ namespace Datadog.Trace.ClrProfiler
 
                 string resourceUrl = requestUri != null ? UriHelpers.CleanUri(requestUri, removeScheme: true, tryRemoveIds: true) : null;
                 string httpUrl = requestUri != null ? UriHelpers.CleanUri(requestUri, removeScheme: false, tryRemoveIds: false) : null;
-
-                tags = new HttpTags();
-
                 string serviceName = tracer.Settings.GetServiceName(tracer, ServiceName);
-                span = tracer.StartSpan(OperationName, tags, serviceName: serviceName, traceId: traceId, spanId: spanId, startTime: startTime, addToTraceContext: addToTraceContext);
 
+                tags = new HttpTags
+                       {
+                           HttpMethod = httpMethod?.ToUpperInvariant(),
+                           HttpUrl = httpUrl,
+                           InstrumentationName = IntegrationRegistry.GetName(integrationId)
+                       };
+
+                span = tracer.StartSpan(OperationName, tags, serviceName: serviceName, traceId: traceId, spanId: spanId, startTime: startTime, addToTraceContext: addToTraceContext);
                 span.Type = SpanTypes.Http;
                 span.ResourceName = $"{httpMethod} {resourceUrl}";
 
-                tags.HttpMethod = httpMethod?.ToUpperInvariant();
-                tags.HttpUrl = httpUrl;
-                tags.InstrumentationName = IntegrationRegistry.GetName(integrationId);
-
                 tags.SetAnalyticsSampleRate(integrationId, tracer.Settings, enabledWithGlobalSetting: false);
 
-                if (!addToTraceContext && span.Context.TraceContext.SamplingPriority == null)
+                if (!addToTraceContext && span.TraceContext.SamplingPriority == null)
                 {
                     // If we don't add the span to the trace context, then we need to manually call the sampler
-                    span.Context.TraceContext.SamplingPriority = tracer.TracerManager.Sampler?.GetSamplingPriority(span);
+                    span.TraceContext.SamplingPriority = tracer.TracerManager.Sampler?.GetSamplingPriority(span);
                 }
             }
             catch (Exception ex)

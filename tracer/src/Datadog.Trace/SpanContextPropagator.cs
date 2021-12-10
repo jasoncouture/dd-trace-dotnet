@@ -22,83 +22,76 @@ namespace Datadog.Trace
 
         private static readonly CultureInfo InvariantCulture = CultureInfo.InvariantCulture;
         private static readonly IDatadogLogger Log = DatadogLogging.GetLoggerFor<SpanContextPropagator>();
-        private static readonly ConcurrentDictionary<Key, string> DefaultTagMappingCache = new ConcurrentDictionary<Key, string>();
+        private static readonly ConcurrentDictionary<Key, string> DefaultTagMappingCache = new();
 
         private SpanContextPropagator()
         {
         }
 
-        public static SpanContextPropagator Instance { get; } = new SpanContextPropagator();
+        public static SpanContextPropagator Instance { get; } = new();
 
         /// <summary>
         /// Propagates the specified context by adding new headers to a <see cref="IHeadersCollection"/>.
-        /// This locks the sampling priority for <paramref name="context"/>.
         /// </summary>
-        /// <param name="context">A <see cref="SpanContext"/> value that will be propagated into <paramref name="headers"/>.</param>
-        /// <param name="headers">A <see cref="IHeadersCollection"/> to add new headers to.</param>
         /// <typeparam name="T">Type of header collection</typeparam>
-        public void Inject<T>(SpanContext context, T headers)
+        public void Inject<T>(ISpan span, ITraceContext trace, T headers)
             where T : IHeadersCollection
         {
-            if (context == null) { throw new ArgumentNullException(nameof(context)); }
+            if (span == null) { throw new ArgumentNullException(nameof(span)); }
+
+            if (trace == null) { throw new ArgumentNullException(nameof(trace)); }
 
             if (headers == null) { throw new ArgumentNullException(nameof(headers)); }
 
-            // lock sampling priority when span propagates.
-            context.TraceContext?.LockSamplingPriority();
+            headers.Set(HttpHeaderNames.TraceId, span.TraceId.ToString(InvariantCulture));
+            headers.Set(HttpHeaderNames.ParentId, span.SpanId.ToString(InvariantCulture));
 
-            headers.Set(HttpHeaderNames.TraceId, context.TraceId.ToString(InvariantCulture));
-            headers.Set(HttpHeaderNames.ParentId, context.SpanId.ToString(InvariantCulture));
+            var origin = trace.Origin;
 
             // avoid writing origin header if not set, keeping the previous behavior.
-            if (context.Origin != null)
+            if (origin != null)
             {
-                headers.Set(HttpHeaderNames.Origin, context.Origin);
+                headers.Set(HttpHeaderNames.Origin, origin);
             }
 
-            var samplingPriority = (int?)(context.TraceContext?.SamplingPriority ?? context.SamplingPriority);
+            var samplingPriority = trace.SamplingPriority;
 
             if (samplingPriority != null)
             {
-                headers.Set(
-                    HttpHeaderNames.SamplingPriority,
-                    samplingPriority.Value.ToString(InvariantCulture));
+                headers.Set(HttpHeaderNames.SamplingPriority, ((int)samplingPriority).ToString(InvariantCulture));
             }
         }
 
         /// <summary>
         /// Propagates the specified context by adding new headers to a <see cref="IHeadersCollection"/>.
-        /// This locks the sampling priority for <paramref name="context"/>.
         /// </summary>
-        /// <param name="context">A <see cref="SpanContext"/> value that will be propagated into <paramref name="carrier"/>.</param>
-        /// <param name="carrier">The headers to add to.</param>
-        /// <param name="setter">The action that can set a header in the carrier.</param>
         /// <typeparam name="T">Type of header collection</typeparam>
-        public void Inject<T>(SpanContext context, T carrier, Action<T, string, string> setter)
+        public void Inject<T>(ISpan span, ITraceContext trace, T carrier, Action<T, string, string> setter)
         {
-            if (context == null) { throw new ArgumentNullException(nameof(context)); }
+            if (span == null) { throw new ArgumentNullException(nameof(span)); }
+
+            if (trace == null) { throw new ArgumentNullException(nameof(trace)); }
 
             if (carrier == null) { throw new ArgumentNullException(nameof(carrier)); }
 
             if (setter == null) { throw new ArgumentNullException(nameof(setter)); }
 
-            // lock sampling priority when span propagates.
-            context.TraceContext?.LockSamplingPriority();
+            setter(carrier, HttpHeaderNames.TraceId, span.TraceId.ToString(InvariantCulture));
+            setter(carrier, HttpHeaderNames.ParentId, span.SpanId.ToString(InvariantCulture));
 
-            setter(carrier, HttpHeaderNames.TraceId, context.TraceId.ToString(InvariantCulture));
-            setter(carrier, HttpHeaderNames.ParentId, context.SpanId.ToString(InvariantCulture));
+            var origin = trace.Origin;
 
             // avoid writing origin header if not set, keeping the previous behavior.
-            if (context.Origin != null)
+            if (origin != null)
             {
-                setter(carrier, HttpHeaderNames.Origin, context.Origin);
+                setter(carrier, HttpHeaderNames.Origin, origin);
             }
 
-            var samplingPriority = (int?)(context.TraceContext?.SamplingPriority ?? context.SamplingPriority);
+            var samplingPriority = trace.SamplingPriority;
 
             if (samplingPriority != null)
             {
-                setter(carrier, HttpHeaderNames.SamplingPriority, samplingPriority?.ToString(InvariantCulture));
+                setter(carrier, HttpHeaderNames.SamplingPriority, ((int)samplingPriority).ToString(InvariantCulture));
             }
         }
 
@@ -196,17 +189,19 @@ namespace Datadog.Trace
                     // Since the header name was saved to do the lookup in the input headers,
                     // convert the header to its final tag name once per prefix
                     var cacheKey = new Key(headerNameToTagName.Key, defaultTagPrefix);
-                    string tagNameResult = DefaultTagMappingCache.GetOrAdd(cacheKey, key =>
-                    {
-                        if (key.HeaderName.TryConvertToNormalizedHeaderTagName(out string normalizedHeaderTagName))
+                    string tagNameResult = DefaultTagMappingCache.GetOrAdd(
+                        cacheKey,
+                        key =>
                         {
-                            return key.TagPrefix + "." + normalizedHeaderTagName;
-                        }
-                        else
-                        {
-                            return null;
-                        }
-                    });
+                            if (key.HeaderName.TryConvertToNormalizedHeaderTagName(out string normalizedHeaderTagName))
+                            {
+                                return key.TagPrefix + "." + normalizedHeaderTagName;
+                            }
+                            else
+                            {
+                                return null;
+                            }
+                        });
 
                     if (tagNameResult != null)
                     {

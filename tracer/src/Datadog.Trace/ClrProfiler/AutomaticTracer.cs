@@ -40,7 +40,7 @@ namespace Datadog.Trace.ClrProfiler
             return SpanContextPropagator.Instance.Extract(value);
         }
 
-        void IDistributedTracer.SetSpanContext(SpanContext value)
+        void IDistributedTracer.SetSpanContext(IReadOnlyDictionary<string, string> value)
         {
             // This is a performance optimization. See comment in GetDistributedTrace() about potential race condition
             if (_child != null)
@@ -51,17 +51,13 @@ namespace Datadog.Trace.ClrProfiler
 
         void IDistributedTracer.LockSamplingPriority()
         {
-            _child?.LockSamplingPriority();
+            // NOOP
         }
 
         SamplingPriority? IDistributedTracer.TrySetSamplingPriority(SamplingPriority? samplingPriority)
         {
-            if (_child == null)
-            {
-                return samplingPriority;
-            }
-
-            return (SamplingPriority?)_child.TrySetSamplingPriority((int?)samplingPriority);
+            // NOOP
+            return samplingPriority;
         }
 
         public object GetAutomaticActiveScope()
@@ -83,7 +79,7 @@ namespace Datadog.Trace.ClrProfiler
             // This is a compromise: we add an additional asynclocal read for the manual tracer when there is no parent trace,
             // but it allows us to remove the asynclocal write for the automatic tracer when running without manual instrumentation.
 
-            return DistributedTrace.Value ?? Tracer.Instance.InternalActiveScope?.Span?.Context;
+            return DistributedTrace.Value ?? Tracer.Instance.InternalActiveScope?.Span;
         }
 
         /// <summary>

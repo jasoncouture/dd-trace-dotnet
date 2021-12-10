@@ -3,10 +3,6 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/). Copyright 2017 Datadog, Inc.
 // </copyright>
 
-#nullable enable
-
-using System.Collections.Generic;
-
 namespace Datadog.Trace
 {
     /// <summary>
@@ -32,16 +28,5 @@ namespace Datadog.Trace
         /// Gets the span identifier.
         /// </summary>
         public ulong SpanId { get; }
-
-        public static SpanContext? FromHeaders(IReadOnlyDictionary<string, string> headers)
-        {
-            if (ulong.TryParse(headers[HttpHeaderNames.TraceId], out var traceId) &&
-                ulong.TryParse(headers[HttpHeaderNames.ParentId], out var spanId))
-            {
-                return new SpanContext(traceId, spanId);
-            }
-
-            return null;
-        }
     }
 }

@@ -1,4 +1,4 @@
-﻿// <copyright file="SmallStringDictionary.cs" company="Datadog">
+﻿// <copyright file="StringMap.cs" company="Datadog">
 // Unless explicitly stated otherwise all files in this repository are licensed under the Apache 2 License.
 // This product includes software developed at Datadog (https://www.datadoghq.com/). Copyright 2017 Datadog, Inc.
 // </copyright>
@@ -9,7 +9,7 @@ using System.Collections.Generic;
 
 namespace Datadog.Trace
 {
-    internal class SmallStringDictionary : IDictionary<string, string>, IReadOnlyDictionary<string, string>
+    internal class StringMap : IDictionary<string, string>, IReadOnlyDictionary<string, string>
     {
         // We usually have 3-5 key/value pairs:
         // x-datadog-trace-id           required
@@ -22,12 +22,12 @@ namespace Datadog.Trace
         private readonly List<string> _keys;
         private readonly List<string> _values;
 
-        public SmallStringDictionary()
+        public StringMap()
             : this(DefaultCapacity)
         {
         }
 
-        public SmallStringDictionary(int capacity)
+        public StringMap(int capacity)
         {
             _keys = new List<string>(capacity);
             _values = new List<string>(capacity);

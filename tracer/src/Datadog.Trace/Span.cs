@@ -29,12 +29,12 @@ namespace Datadog.Trace
 
         private readonly object _lock = new();
 
-        public Span(ISpanContext parent, ITraceContext trace, DateTimeOffset? start = null, ITags? tags = null)
+        public Span(ISpanContext? parent, ITraceContext trace, ulong? spanId = null, DateTimeOffset? start = null, ITags? tags = null)
         {
-            SpanId = SpanIdGenerator.ThreadInstance.CreateNew();
+            SpanId = spanId ?? SpanIdGenerator.ThreadInstance.CreateNew();
             TraceId = trace.TraceId;
 
-            ParentContext = parent;
+            Parent = parent;
             Parent = parent as ISpan;
             TraceContext = trace;
             StartTime = start ?? trace.UtcNow;
@@ -43,7 +43,7 @@ namespace Datadog.Trace
             Log.Debug(
                 "Span started: [s_id: {SpanID}, p_id: {ParentId}, t_id: {TraceId}]",
                 SpanId,
-                parent.SpanId,
+                parent?.SpanId,
                 TraceId);
         }
 
@@ -97,16 +97,14 @@ namespace Datadog.Trace
         {
             get
             {
-                Span localRootSpan = TraceContext.RootSpan;
+                var localRootSpan = TraceContext.RootSpan;
                 return (localRootSpan == null || localRootSpan == this) ? SpanId : localRootSpan.SpanId;
             }
         }
 
-        public ITags Tags { get; set; }
+        public ITags Tags { get; }
 
-        public ISpanContext ParentContext { get; }
-
-        public ISpan? Parent { get; }
+        public ISpanContext? Parent { get; }
 
         public ITraceContext TraceContext { get; }
 
@@ -116,9 +114,9 @@ namespace Datadog.Trace
 
         public bool IsFinished { get; private set; }
 
-        public bool IsRootSpan => TraceContext?.RootSpan == this;
+        public bool IsRootSpan => TraceContext.RootSpan == this;
 
-        public bool IsTopLevel => Parent?.ServiceName != ServiceName;
+        public bool IsTopLevel => (Parent as ISpan)?.ServiceName != ServiceName;
 
         /// <summary>
         /// Record the end time of the span and flushes it to the backend.
@@ -139,7 +137,7 @@ namespace Datadog.Trace
         {
             var sb = new StringBuilder();
             sb.AppendLine($"TraceId: {TraceId}");
-            sb.AppendLine($"ParentId: {ParentContext.SpanId}");
+            sb.AppendLine($"ParentId: {Parent?.SpanId ?? 0}");
             sb.AppendLine($"SpanId: {SpanId}");
             sb.AppendLine($"ServiceName: {ServiceName}");
             sb.AppendLine($"OperationName: {OperationName}");
@@ -159,7 +157,7 @@ namespace Datadog.Trace
         /// <param name="key">The tag's key.</param>
         /// <param name="value">The tag's value.</param>
         /// <returns>This span to allow method chaining.</returns>
-        public ISpan SetTag(string key, string value)
+        public ISpan SetTag(string key, string? value)
         {
             if (IsFinished)
             {
@@ -292,12 +290,19 @@ namespace Datadog.Trace
         /// Add the StackTrace and other exception metadata to the span
         /// </summary>
         /// <param name="exception">The exception.</param>
-        public void SetException(Exception exception)
+        public void SetException(Exception? exception)
         {
-            Error = true;
-
-            if (exception != null)
+            if (exception == null)
             {
+                Error = false;
+                SetTag(Trace.Tags.ErrorMsg, null);
+                SetTag(Trace.Tags.ErrorStack, null);
+                SetTag(Trace.Tags.ErrorType, null);
+            }
+            else
+            {
+                Error = true;
+
                 // for AggregateException, use the first inner exception until we can support multiple errors.
                 // there will be only one error in most cases, and even if there are more and we lose
                 // the other ones, it's still better than the generic "one or more errors occurred" message.
@@ -317,7 +322,7 @@ namespace Datadog.Trace
         /// </summary>
         /// <param name="key">The tag's key</param>
         /// <returns> The value for the tag with the key specified, or null if the tag does not exist</returns>
-        public string GetTag(string key)
+        public string? GetTag(string key)
         {
             switch (key)
             {
@@ -352,13 +357,13 @@ namespace Datadog.Trace
 
             if (shouldCloseSpan)
             {
-                Context.TraceContext.CloseSpan(this);
+                TraceContext.CloseSpan(this);
 
                 if (IsLogLevelDebugEnabled)
                 {
                     Log.Debug(
                         "Span closed: [s_id: {SpanId}, p_id: {ParentId}, t_id: {TraceId}] for (Service: {ServiceName}, Resource: {ResourceName}, Operation: {OperationName}, Tags: [{Tags}])",
-                        new object[] { SpanId, Context.ParentId, TraceId, ServiceName, ResourceName, OperationName, Tags });
+                        new object?[] { SpanId, Parent?.SpanId ?? 0, TraceId, ServiceName, ResourceName, OperationName, Tags });
                 }
             }
         }
@@ -377,7 +382,7 @@ namespace Datadog.Trace
 
         public void ResetStartTime()
         {
-            StartTime = Context.TraceContext.UtcNow;
+            StartTime = TraceContext.UtcNow;
         }
     }
 }

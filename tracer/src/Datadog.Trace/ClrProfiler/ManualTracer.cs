@@ -4,6 +4,7 @@
 // </copyright>
 
 using System;
+using System.Collections.Generic;
 using Datadog.Trace.DuckTyping;
 using Datadog.Trace.Logging;
 
@@ -63,19 +64,20 @@ namespace Datadog.Trace.ClrProfiler
             }
         }
 
-        void IDistributedTracer.SetSpanContext(SpanContext value)
+        void IDistributedTracer.SetSpanContext(IReadOnlyDictionary<string, string> value)
         {
             _parent.SetDistributedTrace(value);
         }
 
         void IDistributedTracer.LockSamplingPriority()
         {
-            _parent.LockSamplingPriority();
+            // NOOP
         }
 
         SamplingPriority? IDistributedTracer.TrySetSamplingPriority(SamplingPriority? samplingPriority)
         {
-            return (SamplingPriority?)_parent.TrySetSamplingPriority((int?)samplingPriority);
+            // NOOP
+            return samplingPriority;
         }
     }
 }

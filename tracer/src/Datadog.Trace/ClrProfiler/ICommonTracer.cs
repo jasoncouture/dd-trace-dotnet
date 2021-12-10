@@ -7,8 +7,5 @@ namespace Datadog.Trace.ClrProfiler
 {
     internal interface ICommonTracer
     {
-        void LockSamplingPriority();
-
-        int? TrySetSamplingPriority(int? samplingPriority);
     }
 }
