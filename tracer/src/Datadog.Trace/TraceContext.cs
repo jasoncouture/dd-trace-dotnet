@@ -23,12 +23,13 @@ namespace Datadog.Trace
 
         private int _openSpans;
         private SamplingPriority? _samplingPriority;
-        private bool _samplingPriorityLocked;
 
         public TraceContext(IDatadogTracer tracer)
         {
             Tracer = tracer;
         }
+
+        public ulong TraceId { get; } = SpanIdGenerator.ThreadInstance.CreateNew();
 
         public Span RootSpan { get; private set; }
 
@@ -38,8 +39,6 @@ namespace Datadog.Trace
 
         /// <summary>
         /// Gets or sets sampling priority.
-        /// Once the sampling priority is locked with <see cref="LockSamplingPriority"/>,
-        /// further attempts to set this are ignored.
         /// </summary>
         public SamplingPriority? SamplingPriority
         {
@@ -49,6 +48,11 @@ namespace Datadog.Trace
                 SetSamplingPriority(value);
             }
         }
+
+        /// <summary>
+        /// Gets or sets the origin of the trace
+        /// </summary>
+        public string Origin { get; set; }
 
         private TimeSpan Elapsed => StopwatchHelpers.GetElapsed(Stopwatch.GetTimestamp() - _timestamp);
 
@@ -69,7 +73,6 @@ namespace Datadog.Trace
                             // this is a root span created from a propagated context that contains a sampling priority.
                             // lock sampling priority when a span is started from a propagated trace.
                             _samplingPriority = context.SamplingPriority;
-                            LockSamplingPriority();
                         }
                         else
                         {
@@ -91,9 +94,6 @@ namespace Datadog.Trace
 
             if (span == RootSpan)
             {
-                // lock sampling priority and set metric when root span finishes
-                LockSamplingPriority();
-
                 if (_samplingPriority == null)
                 {
                     Log.Warning("Cannot set span metric for sampling priority before it has been set.");
@@ -150,39 +150,17 @@ namespace Datadog.Trace
             }
         }
 
-        public void LockSamplingPriority(bool notifyDistributedTracer = true)
+        public void SetSamplingPriority(SamplingPriority? samplingPriority, bool notifyDistributedTracer = true)
         {
-            if (_samplingPriority == null)
+            if (notifyDistributedTracer)
             {
-                Log.Warning("Cannot lock sampling priority before it has been set.");
+                _samplingPriority = DistributedTracer.Instance.TrySetSamplingPriority(samplingPriority);
             }
             else
             {
-                _samplingPriorityLocked = true;
-
-                if (notifyDistributedTracer)
-                {
-                    DistributedTracer.Instance.LockSamplingPriority();
-                }
+                _samplingPriority = samplingPriority;
             }
         }
-
-        public void SetSamplingPriority(SamplingPriority? samplingPriority, bool notifyDistributedTracer = true)
-        {
-            if (!_samplingPriorityLocked)
-            {
-                if (notifyDistributedTracer)
-                {
-                    _samplingPriority = DistributedTracer.Instance.TrySetSamplingPriority(samplingPriority);
-                }
-                else
-                {
-                    _samplingPriority = samplingPriority;
-                }
-            }
-        }
-
-        public bool IsSamplingPriorityLocked() => _samplingPriorityLocked;
 
         public TimeSpan ElapsedSince(DateTimeOffset date)
         {

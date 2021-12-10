@@ -19,10 +19,5 @@ namespace Datadog.Trace
         /// Gets the span identifier.
         /// </summary>
         ulong SpanId { get; }
-
-        /// <summary>
-        /// Gets the service name to propagate to child spans.
-        /// </summary>
-        string ServiceName { get; }
     }
 }

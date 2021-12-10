@@ -3,27 +3,29 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/). Copyright 2017 Datadog, Inc.
 // </copyright>
 
+#nullable enable
+
 using System;
 
 namespace Datadog.Trace
 {
     internal interface ITraceContext
     {
+        ulong TraceId { get; }
+
         DateTimeOffset UtcNow { get; }
 
         SamplingPriority? SamplingPriority { get; set; }
 
-        Span RootSpan { get; }
+        string? Origin { get; set; }
+
+        Span? RootSpan { get; }
 
         void AddSpan(Span span);
 
         void CloseSpan(Span span);
 
-        void LockSamplingPriority(bool notifyDistributedTracer = true);
-
         void SetSamplingPriority(SamplingPriority? samplingPriority, bool notifyDistributedTracer = true);
-
-        bool IsSamplingPriorityLocked();
 
         TimeSpan ElapsedSince(DateTimeOffset date);
     }

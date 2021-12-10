@@ -3,214 +3,45 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/). Copyright 2017 Datadog, Inc.
 // </copyright>
 
-using System.Collections;
+#nullable enable
+
 using System.Collections.Generic;
-using Datadog.Trace.Util;
 
 namespace Datadog.Trace
 {
     /// <summary>
-    /// The SpanContext contains all the information needed to express relationships between spans inside or outside the process boundaries.
+    /// TODO: document and make public
     /// </summary>
-    public class SpanContext : ISpanContext, IReadOnlyDictionary<string, string>
+    internal class SpanContext : ISpanContext
     {
-        private static readonly string[] KeyNames = { HttpHeaderNames.TraceId, HttpHeaderNames.ParentId, HttpHeaderNames.SamplingPriority, HttpHeaderNames.Origin };
-
         /// <summary>
-        /// Initializes a new instance of the <see cref="SpanContext"/> class
-        /// from a propagated context. <see cref="Parent"/> will be null
-        /// since this is a root context locally.
+        /// Initializes a new instance of the <see cref="SpanContext"/> class.
         /// </summary>
-        /// <param name="traceId">The propagated trace id.</param>
-        /// <param name="spanId">The propagated span id.</param>
-        /// <param name="samplingPriority">The propagated sampling priority.</param>
-        /// <param name="serviceName">The service name to propagate to child spans.</param>
-        public SpanContext(ulong? traceId, ulong spanId, SamplingPriority? samplingPriority = null, string serviceName = null)
-            : this(traceId, serviceName)
+        public SpanContext(ulong traceId, ulong spanId)
         {
+            TraceId = traceId;
             SpanId = spanId;
-            SamplingPriority = samplingPriority;
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="SpanContext"/> class
-        /// from a propagated context. <see cref="Parent"/> will be null
-        /// since this is a root context locally.
-        /// </summary>
-        /// <param name="traceId">The propagated trace id.</param>
-        /// <param name="spanId">The propagated span id.</param>
-        /// <param name="samplingPriority">The propagated sampling priority.</param>
-        /// <param name="serviceName">The service name to propagate to child spans.</param>
-        /// <param name="origin">The propagated origin of the trace.</param>
-        internal SpanContext(ulong? traceId, ulong spanId, SamplingPriority? samplingPriority, string serviceName, string origin)
-            : this(traceId, serviceName)
-        {
-            SpanId = spanId;
-            SamplingPriority = samplingPriority;
-            Origin = origin;
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="SpanContext"/> class
-        /// that is the child of the specified parent context.
-        /// </summary>
-        /// <param name="parent">The parent context.</param>
-        /// <param name="traceContext">The trace context.</param>
-        /// <param name="serviceName">The service name to propagate to child spans.</param>
-        /// <param name="traceId">Override the trace id if there's no parent.</param>
-        /// <param name="spanId">The propagated span id.</param>
-        internal SpanContext(ISpanContext parent, ITraceContext traceContext, string serviceName, ulong? traceId = null, ulong? spanId = null)
-            : this(parent?.TraceId ?? traceId, serviceName)
-        {
-            SpanId = spanId ?? SpanIdGenerator.ThreadInstance.CreateNew();
-            Parent = parent;
-            TraceContext = traceContext;
-            if (parent is SpanContext spanContext)
-            {
-                Origin = spanContext.Origin;
-            }
-        }
-
-        private SpanContext(ulong? traceId, string serviceName)
-        {
-            TraceId = traceId > 0
-                          ? traceId.Value
-                          : SpanIdGenerator.ThreadInstance.CreateNew();
-
-            ServiceName = serviceName;
-        }
-
-        /// <summary>
-        /// Gets the parent context.
-        /// </summary>
-        public ISpanContext Parent { get; }
-
-        /// <summary>
-        /// Gets the trace id
+        /// Gets the trace identifier.
         /// </summary>
         public ulong TraceId { get; }
 
         /// <summary>
-        /// Gets the span id of the parent span
-        /// </summary>
-        public ulong? ParentId => Parent?.SpanId;
-
-        /// <summary>
-        /// Gets the span id
+        /// Gets the span identifier.
         /// </summary>
         public ulong SpanId { get; }
 
-        /// <summary>
-        /// Gets or sets the service name to propagate to child spans.
-        /// </summary>
-        public string ServiceName { get; set; }
-
-        /// <summary>
-        /// Gets or sets the origin of the trace
-        /// </summary>
-        internal string Origin { get; set; }
-
-        /// <summary>
-        /// Gets the trace context.
-        /// Returns null for contexts created from incoming propagated context.
-        /// </summary>
-        internal ITraceContext TraceContext { get; }
-
-        /// <summary>
-        /// Gets the sampling priority for contexts created from incoming propagated context.
-        /// Returns null for local contexts.
-        /// </summary>
-        internal SamplingPriority? SamplingPriority { get; }
-
-        /// <inheritdoc/>
-        int IReadOnlyCollection<KeyValuePair<string, string>>.Count => KeyNames.Length;
-
-        /// <inheritdoc />
-        IEnumerable<string> IReadOnlyDictionary<string, string>.Keys => KeyNames;
-
-        /// <inheritdoc/>
-        IEnumerable<string> IReadOnlyDictionary<string, string>.Values
+        public static SpanContext? FromHeaders(IReadOnlyDictionary<string, string> headers)
         {
-            get
+            if (ulong.TryParse(headers[HttpHeaderNames.TraceId], out var traceId) &&
+                ulong.TryParse(headers[HttpHeaderNames.ParentId], out var spanId))
             {
-                foreach (var key in KeyNames)
-                {
-                    yield return ((IReadOnlyDictionary<string, string>)this)[key];
-                }
-            }
-        }
-
-        /// <inheritdoc/>
-        string IReadOnlyDictionary<string, string>.this[string key]
-        {
-            get
-            {
-                if (((IReadOnlyDictionary<string, string>)this).TryGetValue(key, out var value))
-                {
-                    return value;
-                }
-
-                throw new KeyNotFoundException($"Key not found: {key}");
-            }
-        }
-
-        /// <inheritdoc/>
-        IEnumerator<KeyValuePair<string, string>> IEnumerable<KeyValuePair<string, string>>.GetEnumerator()
-        {
-            var dictionary = (IReadOnlyDictionary<string, string>)this;
-
-            foreach (var key in KeyNames)
-            {
-                yield return new KeyValuePair<string, string>(key, dictionary[key]);
-            }
-        }
-
-        /// <inheritdoc/>
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return ((IReadOnlyDictionary<string, string>)this).GetEnumerator();
-        }
-
-        /// <inheritdoc/>
-        bool IReadOnlyDictionary<string, string>.ContainsKey(string key)
-        {
-            foreach (var k in KeyNames)
-            {
-                if (k == key)
-                {
-                    return true;
-                }
+                return new SpanContext(traceId, spanId);
             }
 
-            return false;
-        }
-
-        /// <inheritdoc/>
-        bool IReadOnlyDictionary<string, string>.TryGetValue(string key, out string value)
-        {
-            switch (key)
-            {
-                case HttpHeaderNames.TraceId:
-                    value = TraceId.ToString();
-                    return true;
-
-                case HttpHeaderNames.ParentId:
-                    value = SpanId.ToString();
-                    return true;
-
-                case HttpHeaderNames.SamplingPriority:
-                    var samplingPriority = SamplingPriority ?? TraceContext?.SamplingPriority;
-
-                    value = samplingPriority != null ? ((int)samplingPriority.Value).ToString() : null;
-                    return true;
-
-                case HttpHeaderNames.Origin:
-                    value = Origin;
-                    return true;
-            }
-
-            value = null;
-            return false;
+            return null;
         }
     }
 }

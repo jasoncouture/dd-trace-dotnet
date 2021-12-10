@@ -13,7 +13,7 @@ namespace Datadog.Trace
     /// tracks the duration of an operation as well as associated metadata in
     /// the form of a resource name, a service name, and user defined tags.
     /// </summary>
-    internal partial class Span : ISpan
+    internal partial class Span : ISpan, ISpanContext
     {
         /// <inheritdoc />
         string ISpan.OperationName
@@ -51,10 +51,10 @@ namespace Datadog.Trace
         }
 
         /// <inheritdoc />
-        ulong ISpan.TraceId => TraceId;
+        ulong ISpanContext.TraceId => TraceId;
 
         /// <inheritdoc />
-        ulong ISpan.SpanId => SpanId;
+        ulong ISpanContext.SpanId => SpanId;
 
         /// <inheritdoc />
         ISpanContext ISpan.Context => Context;
