@@ -47,7 +47,7 @@ namespace Datadog.Trace
         /// </summary>
         public SamplingPriority? SamplingPriority
         {
-            get => _samplingPriority;
+            get => (SamplingPriority?)_samplingPriority;
             set
             {
                 SetSamplingPriority(value);
@@ -65,7 +65,7 @@ namespace Datadog.Trace
         {
             lock (_lock)
             {
-                if(RootSpan == null)
+                if (RootSpan == null)
                 {
                     RootSpan = span;
                     _samplingPriority ??= Tracer.Sampler?.GetSamplingPriority(span);

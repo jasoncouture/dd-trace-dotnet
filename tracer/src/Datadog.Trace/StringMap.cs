@@ -3,13 +3,16 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/). Copyright 2017 Datadog, Inc.
 // </copyright>
 
+#nullable enable
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Datadog.Trace.Headers;
 
 namespace Datadog.Trace
 {
-    internal class StringMap : IDictionary<string, string>, IReadOnlyDictionary<string, string>
+    internal class StringMap : IDictionary<string, string?>, IReadOnlyDictionary<string, string?>, IHeadersCollection
     {
         // We usually have 3-5 key/value pairs:
         // x-datadog-trace-id           required
@@ -20,7 +23,7 @@ namespace Datadog.Trace
         private const int DefaultCapacity = 5;
 
         private readonly List<string> _keys;
-        private readonly List<string> _values;
+        private readonly List<string?> _values;
 
         public StringMap()
             : this(DefaultCapacity)
@@ -30,22 +33,22 @@ namespace Datadog.Trace
         public StringMap(int capacity)
         {
             _keys = new List<string>(capacity);
-            _values = new List<string>(capacity);
+            _values = new List<string?>(capacity);
         }
 
         public int Count => _keys.Count;
 
         public ICollection<string> Keys => _keys;
 
-        public ICollection<string> Values => _values;
+        public ICollection<string?> Values => _values;
 
-        IEnumerable<string> IReadOnlyDictionary<string, string>.Values => _keys;
+        IEnumerable<string> IReadOnlyDictionary<string, string?>.Keys => _keys;
 
-        IEnumerable<string> IReadOnlyDictionary<string, string>.Keys => _values;
+        IEnumerable<string?> IReadOnlyDictionary<string, string?>.Values => _values;
 
-        bool ICollection<KeyValuePair<string, string>>.IsReadOnly => false;
+        bool ICollection<KeyValuePair<string, string?>>.IsReadOnly => false;
 
-        public string this[string key]
+        public string? this[string key]
         {
             get
             {
@@ -72,22 +75,22 @@ namespace Datadog.Trace
             }
         }
 
-        void ICollection<KeyValuePair<string, string>>.Add(KeyValuePair<string, string> item)
+        void ICollection<KeyValuePair<string, string?>>.Add(KeyValuePair<string, string?> item)
         {
             Add(item.Key, item.Value);
         }
 
-        bool ICollection<KeyValuePair<string, string>>.Contains(KeyValuePair<string, string> item)
+        bool ICollection<KeyValuePair<string, string?>>.Contains(KeyValuePair<string, string?> item)
         {
             throw new NotImplementedException();
         }
 
-        void ICollection<KeyValuePair<string, string>>.CopyTo(KeyValuePair<string, string>[] array, int arrayIndex)
+        void ICollection<KeyValuePair<string, string?>>.CopyTo(KeyValuePair<string, string?>[] array, int arrayIndex)
         {
             throw new NotImplementedException();
         }
 
-        bool ICollection<KeyValuePair<string, string>>.Remove(KeyValuePair<string, string> item)
+        bool ICollection<KeyValuePair<string, string?>>.Remove(KeyValuePair<string, string?> item)
         {
             throw new NotImplementedException();
         }
@@ -111,7 +114,7 @@ namespace Datadog.Trace
             return false;
         }
 
-        public void Add(string key, string value)
+        public void Add(string key, string? value)
         {
             for (int i = 0; i < Count; i++)
             {
@@ -139,7 +142,7 @@ namespace Datadog.Trace
             return false;
         }
 
-        public bool TryGetValue(string key, out string value)
+        public bool TryGetValue(string key, out string? value)
         {
             for (int i = 0; i < Count; i++)
             {
@@ -154,17 +157,35 @@ namespace Datadog.Trace
             return false;
         }
 
-        IEnumerator<KeyValuePair<string, string>> IEnumerable<KeyValuePair<string, string>>.GetEnumerator()
+        IEnumerator<KeyValuePair<string, string?>> IEnumerable<KeyValuePair<string, string?>>.GetEnumerator()
         {
             for (int i = 0; i < Count; i++)
             {
-                yield return new KeyValuePair<string, string>(_keys[i], _values[i]);
+                yield return new KeyValuePair<string, string?>(_keys[i], _values[i]);
             }
         }
 
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return ((IEnumerable<KeyValuePair<string, string>>)this).GetEnumerator();
+            return ((IEnumerable<KeyValuePair<string, string?>>)this).GetEnumerator();
+        }
+
+        IEnumerable<string?> IHeadersCollection.GetValues(string name)
+        {
+            if (TryGetValue(name, out var value))
+            {
+                yield return value;
+            }
+        }
+
+        void IHeadersCollection.Set(string name, string value)
+        {
+            this[name] = value;
+        }
+
+        void IHeadersCollection.Remove(string name)
+        {
+            _ = Remove(name);
         }
     }
 }

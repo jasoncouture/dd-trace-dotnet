@@ -3,30 +3,32 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/). Copyright 2017 Datadog, Inc.
 // </copyright>
 
+#nullable enable
+
 namespace Datadog.Trace
 {
     /// <summary>
-    /// TODO: document and make public
+    /// TODO: document and make public, "DistributedSpanContext"
     /// </summary>
     internal class SpanContext : ISpanContext
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="SpanContext"/> class.
         /// </summary>
-        public SpanContext(ulong traceId, ulong spanId)
+        public SpanContext(ulong traceId, ulong spanId, int? samplingPriority, string? origin)
         {
             TraceId = traceId;
             SpanId = spanId;
+            SamplingPriority = samplingPriority;
+            Origin = origin;
         }
 
-        /// <summary>
-        /// Gets the trace identifier.
-        /// </summary>
         public ulong TraceId { get; }
 
-        /// <summary>
-        /// Gets the span identifier.
-        /// </summary>
         public ulong SpanId { get; }
+
+        public int? SamplingPriority { get; }
+
+        public string? Origin { get; }
     }
 }
