@@ -110,9 +110,6 @@ namespace Datadog.Trace
 
         public bool IsTopLevel => (Parent as ISpan)?.ServiceName != ServiceName;
 
-        // TODO: inline all usages (change "span.Context" to "span")
-        public Span Context => this;
-
         /// <summary>
         /// Record the end time of the span and flushes it to the backend.
         /// After the span has been finished all modifications will be ignored.

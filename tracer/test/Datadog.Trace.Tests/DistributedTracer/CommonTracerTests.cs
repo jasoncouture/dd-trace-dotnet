@@ -21,11 +21,11 @@ namespace Datadog.Trace.Tests.DistributedTracer
 
             using (var scope = (Scope)Tracer.Instance.StartActive("Test"))
             {
-                scope.Span.Context.TraceContext.IsSamplingPriorityLocked().Should().BeFalse();
+                scope.Span.TraceContext.IsSamplingPriorityLocked().Should().BeFalse();
 
                 commonTracer.LockSamplingPriority();
 
-                scope.Span.Context.TraceContext.IsSamplingPriorityLocked().Should().BeTrue();
+                scope.Span.TraceContext.IsSamplingPriorityLocked().Should().BeTrue();
             }
         }
 
@@ -58,8 +58,8 @@ namespace Datadog.Trace.Tests.DistributedTracer
             var expectedSamplingPriority = SamplingPriority.UserKeep;
 
             using var scope = (Scope)Tracer.Instance.StartActive("Test");
-            scope.Span.Context.TraceContext.SetSamplingPriority(expectedSamplingPriority);
-            scope.Span.Context.TraceContext.LockSamplingPriority();
+            scope.Span.TraceContext.SetSamplingPriority(expectedSamplingPriority);
+            scope.Span.TraceContext.LockSamplingPriority();
 
             var actualSamplingPriority = (SamplingPriority?)commonTracer.TrySetSamplingPriority((int?)SamplingPriority.UserReject);
 
@@ -78,7 +78,7 @@ namespace Datadog.Trace.Tests.DistributedTracer
             var actualSamplingPriority = (SamplingPriority?)commonTracer.TrySetSamplingPriority((int?)expectedSamplingPriority);
 
             actualSamplingPriority.Should().Be(expectedSamplingPriority);
-            scope.Span.Context.TraceContext.SamplingPriority.Should().Be(expectedSamplingPriority, "TrySetSamplingPriority should have successfully set the active trace sampling priority");
+            scope.Span.TraceContext.SamplingPriority.Should().Be(expectedSamplingPriority, "TrySetSamplingPriority should have successfully set the active trace sampling priority");
         }
 
         private class CommonTracerImpl : CommonTracer
