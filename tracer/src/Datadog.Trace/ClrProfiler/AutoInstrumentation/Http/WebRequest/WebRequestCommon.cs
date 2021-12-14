@@ -48,18 +48,17 @@ namespace Datadog.Trace.ClrProfiler.AutoInstrumentation.Http.WebRequest
 
                 try
                 {
-                    scope = ScopeFactory.CreateOutboundHttpScope(Tracer.Instance, request.Method, request.RequestUri, IntegrationId, out var tags, spanContext?.TraceId, spanContext?.SpanId);
+                    scope = ScopeFactory.CreateOutboundHttpScope(Tracer.Instance, request.Method, request.RequestUri, IntegrationId, out _, spanContext?.TraceId, spanContext?.SpanId);
 
                     if (scope != null)
                     {
                         if (setSamplingPriority)
                         {
-                            scope.Span.SetTraceSamplingPriority(spanContext.SamplingPriority.Value);
-                            scope.Span.Context.TraceContext.LockSamplingPriority();
+                            scope.Span.SetTraceSamplingPriority((SamplingPriority?)spanContext.SamplingPriority);
                         }
 
                         // add distributed tracing headers to the HTTP request
-                        SpanContextPropagator.Instance.Inject(scope.Span.Context, request.Headers.Wrap());
+                        SpanContextPropagator.Instance.Inject(scope.Span, request.Headers.Wrap());
 
                         return new CallTargetState(scope);
                     }

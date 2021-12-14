@@ -3,10 +3,7 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/). Copyright 2017 Datadog, Inc.
 // </copyright>
 
-using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 
 namespace Datadog.Trace.ClrProfiler.AutoInstrumentation.AWS.SQS
@@ -15,12 +12,12 @@ namespace Datadog.Trace.ClrProfiler.AutoInstrumentation.AWS.SQS
     {
         private const string SqsKey = "_datadog";
 
-        private static void Inject<TMessageRequest>(SpanContext context, IDictionary messageAttributes)
+        private static void Inject<TMessageRequest>(Span span, IDictionary messageAttributes)
         {
             // Consolidate headers into one JSON object with <header_name>:<value>
             StringBuilder sb = new();
             sb.Append('{');
-            SpanContextPropagator.Instance.Inject(context, sb, ((carrier, key, value) => carrier.AppendFormat("\"{0}\":\"{1}\",", key, value)));
+            SpanContextPropagator.Instance.Inject(span, sb, ((carrier, key, value) => carrier.AppendFormat("\"{0}\":\"{1}\",", key, value)));
             sb.Remove(startIndex: sb.Length - 1, length: 1); // Remove trailing comma
             sb.Append('}');
 
@@ -28,7 +25,7 @@ namespace Datadog.Trace.ClrProfiler.AutoInstrumentation.AWS.SQS
             messageAttributes[SqsKey] = CachedMessageHeadersHelper<TMessageRequest>.CreateMessageAttributeValue(resultString);
         }
 
-        public static void InjectHeadersIntoMessage<TMessageRequest>(IContainsMessageAttributes carrier, SpanContext spanContext)
+        public static void InjectHeadersIntoMessage<TMessageRequest>(IContainsMessageAttributes carrier, Span span)
         {
             // add distributed tracing headers to the message
             if (carrier.MessageAttributes == null)
@@ -40,7 +37,7 @@ namespace Datadog.Trace.ClrProfiler.AutoInstrumentation.AWS.SQS
             // Only inject if there's room
             if (carrier.MessageAttributes.Count < 10)
             {
-                Inject<TMessageRequest>(spanContext, carrier.MessageAttributes);
+                Inject<TMessageRequest>(span, carrier.MessageAttributes);
             }
         }
     }

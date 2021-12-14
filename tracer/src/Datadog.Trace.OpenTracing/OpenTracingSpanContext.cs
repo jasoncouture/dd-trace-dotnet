@@ -12,8 +12,6 @@ namespace Datadog.Trace.OpenTracing
 {
     internal class OpenTracingSpanContext : global::OpenTracing.ISpanContext
     {
-        private static readonly IDatadogLogger Log = DatadogLogging.GetLoggerFor<OpenTracingSpanContext>();
-
         public OpenTracingSpanContext(ISpanContext context)
         {
             Context = context;

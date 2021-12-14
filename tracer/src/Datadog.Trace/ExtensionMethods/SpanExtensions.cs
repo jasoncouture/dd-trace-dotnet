@@ -103,6 +103,11 @@ namespace Datadog.Trace.ExtensionMethods
             }
         }
 
+        internal static IReadOnlyDictionary<string, string> GetPropagationValues(this Span span)
+        {
+            return SpanContextPropagator.Instance.Inject(span);
+        }
+
         private static string ConvertStatusCodeToString(int statusCode)
         {
             if (statusCode == 200)

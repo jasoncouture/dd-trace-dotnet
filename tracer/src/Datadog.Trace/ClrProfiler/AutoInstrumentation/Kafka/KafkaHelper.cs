@@ -192,11 +192,11 @@ namespace Datadog.Trace.ClrProfiler.AutoInstrumentation.Kafka
         /// <summary>
         /// Try to inject the prop
         /// </summary>
-        /// <param name="context">The Span context to propagate</param>
+        /// <param name="span">The Span to propagate</param>
         /// <param name="message">The duck-typed Kafka Message object</param>
         /// <typeparam name="TTopicPartitionMarker">The TopicPartition type (used  optimisation purposes)</typeparam>
         /// <typeparam name="TMessage">The type of the duck-type proxy</typeparam>
-        internal static void TryInjectHeaders<TTopicPartitionMarker, TMessage>(SpanContext context, TMessage message)
+        internal static void TryInjectHeaders<TTopicPartitionMarker, TMessage>(Span span, TMessage message)
             where TMessage : IMessage
         {
             if (!_headersInjectionEnabled)
@@ -213,7 +213,7 @@ namespace Datadog.Trace.ClrProfiler.AutoInstrumentation.Kafka
 
                 var adapter = new KafkaHeadersCollectionAdapter(message.Headers);
 
-                SpanContextPropagator.Instance.Inject(context, adapter);
+                SpanContextPropagator.Instance.Inject(span, adapter);
             }
             catch (Exception ex)
             {

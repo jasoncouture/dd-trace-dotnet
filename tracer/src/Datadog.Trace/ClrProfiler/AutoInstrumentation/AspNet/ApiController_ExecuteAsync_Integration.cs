@@ -4,6 +4,7 @@
 // </copyright>
 
 #if NETFRAMEWORK
+
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -11,11 +12,9 @@ using System.Linq;
 using System.Threading;
 using System.Web;
 using Datadog.Trace.ClrProfiler.CallTarget;
-using Datadog.Trace.ClrProfiler.Emit;
 using Datadog.Trace.Configuration;
 using Datadog.Trace.DuckTyping;
 using Datadog.Trace.ExtensionMethods;
-using Datadog.Trace.Headers;
 using Datadog.Trace.Tagging;
 
 namespace Datadog.Trace.ClrProfiler.AutoInstrumentation.AspNet
@@ -106,7 +105,7 @@ namespace Datadog.Trace.ClrProfiler.AutoInstrumentation.AspNet
                 {
                     // We don't know how long it'll take for ASP.NET to invoke the callback,
                     // so we store the real finish time
-                    var now = scope.Span.Context.TraceContext.UtcNow;
+                    var now = scope.Span.TraceContext.UtcNow;
                     httpContext.AddOnRequestCompleted(h => OnRequestCompleted(h, scope, now));
                 }
                 else

@@ -5,6 +5,7 @@
 
 using System;
 using Datadog.Trace.ClrProfiler;
+using Datadog.Trace.ExtensionMethods;
 using Datadog.Trace.Logging;
 
 namespace Datadog.Trace
@@ -47,7 +48,7 @@ namespace Datadog.Trace
             SpanOpened?.Invoke(this, scopeOpenedArgs);
 
             Active = scope;
-            DistributedTracer.Instance.SetSpanContext(scope.Span);
+            DistributedTracer.Instance.SetSpanContext(scope.Span.GetPropagationValues());
 
             if (newParent != null)
             {
@@ -76,7 +77,7 @@ namespace Datadog.Trace
             Active = scope.Parent;
 
             // scope.Parent is null for distributed traces, so use scope.Span.Context.Parent
-            DistributedTracer.Instance.SetSpanContext(scope.Span);
+            DistributedTracer.Instance.SetSpanContext(scope.Span.GetPropagationValues());
 
             SpanDeactivated?.Invoke(this, new SpanEventArgs(scope.Span));
 

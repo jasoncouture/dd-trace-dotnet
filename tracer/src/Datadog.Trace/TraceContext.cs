@@ -7,7 +7,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Threading;
 using Datadog.Trace.ClrProfiler;
 using Datadog.Trace.Logging;
 using Datadog.Trace.PlatformHelpers;
@@ -181,7 +180,7 @@ namespace Datadog.Trace
 
             var samplingPriority = _samplingPriority;
 
-            if (samplingPriority == null)
+            if (samplingPriority == null || spans.Array == null)
             {
                 return;
             }

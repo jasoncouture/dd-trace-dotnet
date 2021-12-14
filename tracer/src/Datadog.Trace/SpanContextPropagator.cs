@@ -127,7 +127,7 @@ namespace Datadog.Trace
         /// <param name="getter">The function that can extract a list of values for a given header name.</param>
         /// <typeparam name="T">Type of header collection</typeparam>
         /// <returns>A new <see cref="SpanContext"/> that contains the values obtained from <paramref name="carrier"/>.</returns>
-        public SpanContext? Extract<T>(T carrier, Func<T, string, IEnumerable<string>> getter)
+        public SpanContext? Extract<T>(T carrier, Func<T, string, IEnumerable<string?>> getter)
         {
             if (carrier == null) { throw new ArgumentNullException(nameof(carrier)); }
 
@@ -208,32 +208,11 @@ namespace Datadog.Trace
             }
         }
 
-        public IReadOnlyDictionary<string, string?>? Inject(Span? span)
+        public IReadOnlyDictionary<string, string?> Inject(Span span)
         {
-            if (span == null)
-            {
-                return null;
-            }
-
             var map = new StringMap();
             Inject(span, map);
             return map;
-        }
-
-        public void Inject(Span span, IDictionary<string, string?> headers)
-        {
-            headers[HttpHeaderNames.TraceId] = span.TraceId.ToString(InvariantCulture);
-            headers[HttpHeaderNames.ParentId] = span.SpanId.ToString(InvariantCulture);
-
-            if (span.TraceContext.SamplingPriority != null)
-            {
-                headers[HttpHeaderNames.SamplingPriority] = ((int)span.TraceContext.SamplingPriority).ToString(InvariantCulture);
-            }
-
-            if (span.TraceContext.Origin != null)
-            {
-                headers[HttpHeaderNames.Origin] = span.TraceContext.Origin;
-            }
         }
 
         /// <summary>
@@ -329,13 +308,13 @@ namespace Datadog.Trace
             return null;
         }
 
-        private static ulong ParseUInt64<T>(T carrier, Func<T, string, IEnumerable<string>> getter, string headerName)
+        private static ulong ParseUInt64<T>(T carrier, Func<T, string, IEnumerable<string?>> getter, string headerName)
         {
             var headerValues = getter(carrier, headerName);
 
             bool hasValue = false;
 
-            foreach (string headerValue in headerValues)
+            foreach (var headerValue in headerValues)
             {
                 if (ulong.TryParse(headerValue, NumberStyles, InvariantCulture, out var result))
                 {
@@ -353,13 +332,13 @@ namespace Datadog.Trace
             return 0;
         }
 
-        private static int? ParseInt32<T>(T carrier, Func<T, string, IEnumerable<string>> getter, string headerName)
+        private static int? ParseInt32<T>(T carrier, Func<T, string, IEnumerable<string?>> getter, string headerName)
         {
             var headerValues = getter(carrier, headerName);
 
             bool hasValue = false;
 
-            foreach (string headerValue in headerValues)
+            foreach (var headerValue in headerValues)
             {
                 if (int.TryParse(headerValue, NumberStyles, InvariantCulture, out var result))
                 {
@@ -393,11 +372,11 @@ namespace Datadog.Trace
             return null;
         }
 
-        private static string? ParseString<T>(T carrier, Func<T, string, IEnumerable<string>> getter, string headerName)
+        private static string? ParseString<T>(T carrier, Func<T, string, IEnumerable<string?>> getter, string headerName)
         {
             var headerValues = getter(carrier, headerName);
 
-            foreach (string headerValue in headerValues)
+            foreach (var headerValue in headerValues)
             {
                 if (!string.IsNullOrEmpty(headerValue))
                 {
@@ -438,7 +417,7 @@ namespace Datadog.Trace
             /// </summary>
             /// <param name="obj">Object to compare</param>
             /// <returns>True if both are equals; otherwise, false.</returns>
-            public override bool Equals(object obj)
+            public override bool Equals(object? obj)
             {
                 return obj is Key key &&
                        HeaderName == key.HeaderName &&
