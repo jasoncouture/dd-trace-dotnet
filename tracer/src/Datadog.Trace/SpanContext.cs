@@ -4,6 +4,7 @@
 // </copyright>
 
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Globalization;
 
 #nullable enable
@@ -16,9 +17,8 @@ namespace Datadog.Trace
     internal class SpanContext : ISpanContext
     {
         public SpanContext(ulong traceId, ulong spanId)
+            : this(traceId, spanId, samplingPriority: null, origin: null)
         {
-            TraceId = traceId;
-            SpanId = spanId;
         }
 
         public SpanContext(ulong traceId, ulong spanId, int? samplingPriority, string? origin)
@@ -36,6 +36,27 @@ namespace Datadog.Trace
         public int? SamplingPriority { get; }
 
         public string? Origin { get; }
+
+        public IReadOnlyDictionary<string, string?> ToReadOnlyDictionary()
+        {
+            var invariantCulture = CultureInfo.InvariantCulture;
+
+            var map = new StringMap(capacity: 4)
+                      {
+                          [HttpHeaderNames.TraceId] = TraceId.ToString(invariantCulture),
+                          [HttpHeaderNames.ParentId] = SpanId.ToString(invariantCulture)
+                      };
+
+            foreach (var baggageItem in ((ISpanContext)this).GetBaggageItems())
+            {
+                if (baggageItem.Value != null)
+                {
+                    map[baggageItem.Key] = baggageItem.Value;
+                }
+            }
+
+            return map;
+        }
 
         IEnumerable<KeyValuePair<string, string>> ISpanContext.GetBaggageItems()
         {

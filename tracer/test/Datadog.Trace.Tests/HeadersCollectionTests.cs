@@ -208,10 +208,10 @@ namespace Datadog.Trace.Tests
         {
             const int traceId = 9;
             const int spanId = 7;
-            const SamplingPriority samplingPriority = SamplingPriority.UserKeep;
+            const int samplingPriority = (int)SamplingPriority.UserKeep;
             const string origin = "synthetics";
 
-            var context = new SpanContext(traceId, spanId, samplingPriority, null, origin);
+            var context = new SpanContext(traceId, spanId, samplingPriority, origin);
             SpanContextPropagator.Instance.Inject(context, headers);
             var resultContext = SpanContextPropagator.Instance.Extract(headers);
 

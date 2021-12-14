@@ -71,7 +71,7 @@ namespace Datadog.Trace.Tests.Agent
 
             Assert.False(buffer.IsFull);
 
-            var trace = new ArraySegment<Span>(new[] { new Span(DateTimeOffset.UtcNow, new SpanContext(1, 1)) });
+            var trace = new ArraySegment<Span>(new[] { new Span(new SpanContext(1, 1)) });
 
             var result = buffer.TryWrite(trace, ref _temporaryBuffer);
 
@@ -95,7 +95,7 @@ namespace Datadog.Trace.Tests.Agent
         {
             var buffer = new SpanBuffer(10 * 1024 * 1024, SpanFormatterResolver.Instance);
 
-            var trace = new ArraySegment<Span>(new[] { new Span(DateTimeOffset.UtcNow, new SpanContext(1, 1)) });
+            var trace = new ArraySegment<Span>(new[] { new Span(new SpanContext(1, 1)) });
 
             Assert.True(buffer.TryWrite(trace, ref _temporaryBuffer));
 
@@ -115,9 +115,9 @@ namespace Datadog.Trace.Tests.Agent
 
             var trace = new ArraySegment<Span>(new[]
             {
-                new Span(DateTimeOffset.UtcNow, new SpanContext(1, 1)),
-                new Span(DateTimeOffset.UtcNow, new SpanContext(2, 2)),
-                new Span(DateTimeOffset.UtcNow, new SpanContext(3, 3)),
+                new Span(new SpanContext(1, 1)),
+                new Span(new SpanContext(2, 2)),
+                new Span(new SpanContext(3, 3)),
             });
 
             Assert.True(buffer.TryWrite(trace, ref _temporaryBuffer));

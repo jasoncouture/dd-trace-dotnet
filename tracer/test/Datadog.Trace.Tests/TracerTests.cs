@@ -69,14 +69,14 @@ namespace Datadog.Trace.Tests
             var parentSpan = parentScope.Span;
             var childSpan = childScope.Span;
 
-            Assert.Equal(parentSpan, childSpan.Parent);
+            Assert.Equal(parentSpan, childSpan.ParentSpan);
         }
 
         [Fact]
         public void StartActive_IgnoreActiveScope_RootSpan()
         {
-            var firstScope = _tracer.StartActive("First");
-            var secondScope = (Scope)_tracer.StartActive("Second", ignoreActiveScope: true);
+            using var firstScope = _tracer.StartActive("First");
+            using var secondScope = (Scope)_tracer.StartActive("Second", ignoreActiveScope: true);
             var secondSpan = secondScope.Span;
 
             Assert.True(secondSpan.IsRootSpan);
@@ -130,7 +130,7 @@ namespace Datadog.Trace.Tests
             var childScope = (Scope)_tracer.StartActive("Child", parent);
             var childSpan = childScope.Span;
 
-            Assert.Equal(parent, childSpan.Parent);
+            Assert.Equal(parent, childSpan.ParentSpan);
         }
 
         [Fact]
@@ -140,15 +140,15 @@ namespace Datadog.Trace.Tests
             const ulong parentId = 7;
             const SamplingPriority samplingPriority = SamplingPriority.UserKeep;
 
-            var parent = new SpanContext(traceId, parentId, samplingPriority);
+            var parent = new SpanContext(traceId, parentId, (int)samplingPriority, origin: null);
             var child = (Scope)_tracer.StartActive("Child", parent);
             var childSpan = child.Span;
 
             Assert.True(childSpan.IsRootSpan);
             Assert.Equal(traceId, parent.TraceId);
             Assert.Equal(parentId, parent.SpanId);
-            Assert.Null(parent.TraceContext);
-            Assert.Equal(parent, childSpan.Parent);
+            // Assert.Null(parent.TraceContext);
+            Assert.Equal(parent, childSpan.ParentContext);
             Assert.Equal(parentId, childSpan.ParentId);
             Assert.NotNull(childSpan.TraceContext);
             Assert.Equal(samplingPriority, childSpan.TraceContext.SamplingPriority);
@@ -221,7 +221,7 @@ namespace Datadog.Trace.Tests
             _tracer.ActivateSpan(parentSpan);
             var childSpan = _tracer.StartSpan("Child");
 
-            Assert.Equal(parentSpan, childSpan.Parent);
+            Assert.Equal(parentSpan, childSpan.ParentSpan);
         }
 
         [Fact]
@@ -353,24 +353,24 @@ namespace Datadog.Trace.Tests
         {
             const ulong traceId = 9;
             const ulong spanId = 7;
-            const SamplingPriority samplingPriority = SamplingPriority.UserKeep;
+            const int samplingPriority = (int)SamplingPriority.UserKeep;
             const string origin = "synthetics";
 
-            var propagatedContext = new SpanContext(traceId, spanId, samplingPriority, null, origin);
+            var propagatedContext = new SpanContext(traceId, spanId, samplingPriority, origin);
             Assert.Equal(origin, propagatedContext.Origin);
 
             using var firstScope = (Scope)_tracer.StartActive("First Span", propagatedContext);
-            var firstSpan = (Span)firstScope.Span;
+            var firstSpan = firstScope.Span;
 
             Assert.True(firstSpan.IsRootSpan);
-            Assert.Equal(origin, firstSpan.Origin);
+            Assert.Equal(origin, firstSpan.TraceContext.Origin);
             Assert.Equal(origin, firstSpan.GetTag(Tags.Origin));
 
             using var secondScope = (Scope)_tracer.StartActive("Child", firstSpan);
-            var secondSpan = (Span)secondScope.Span;
+            var secondSpan = secondScope.Span;
 
             Assert.False(secondSpan.IsRootSpan);
-            Assert.Equal(origin, secondSpan.Origin);
+            Assert.Equal(origin, secondSpan.TraceContext.Origin);
             Assert.Equal(origin, secondSpan.GetTag(Tags.Origin));
         }
 
@@ -379,10 +379,10 @@ namespace Datadog.Trace.Tests
         {
             const ulong traceId = 9;
             const ulong spanId = 7;
-            const SamplingPriority samplingPriority = SamplingPriority.UserKeep;
+            const int samplingPriority = (int)SamplingPriority.UserKeep;
             const string origin = "synthetics";
 
-            var propagatedContext = new SpanContext(traceId, spanId, samplingPriority, null, origin);
+            var propagatedContext = new SpanContext(traceId, spanId, samplingPriority, origin);
 
             using var firstScope = (Scope)_tracer.StartActive("First Span", propagatedContext);
             var firstSpan = firstScope.Span;
@@ -396,8 +396,8 @@ namespace Datadog.Trace.Tests
             var resultContext = SpanContextPropagator.Instance.Extract(headers);
 
             Assert.NotNull(resultContext);
-            Assert.Equal(firstSpan.Origin, resultContext.Origin);
-            Assert.Equal(secondSpan.Origin, resultContext.Origin);
+            Assert.Equal(firstSpan.TraceContext.Origin, resultContext.Origin);
+            Assert.Equal(secondSpan.TraceContext.Origin, resultContext.Origin);
             Assert.Equal(origin, resultContext.Origin);
         }
 

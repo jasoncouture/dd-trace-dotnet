@@ -57,7 +57,7 @@ namespace Datadog.Trace.Ci.Agent
                 // Check if the last span (the root) is a test, benchmark or build span
                 Span lastSpan = trace.Array[trace.Offset + trace.Count - 1];
 
-                if (lastSpan.ParentSpanId is null &&
+                if (lastSpan.ParentId is null &&
                     lastSpan.Type != SpanTypes.Test &&
                     lastSpan.Type != SpanTypes.Benchmark &&
                     lastSpan.Type != SpanTypes.Build)

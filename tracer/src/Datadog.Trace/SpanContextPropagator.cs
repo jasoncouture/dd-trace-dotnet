@@ -196,9 +196,10 @@ namespace Datadog.Trace
             }
         }
 
-        public IReadOnlyDictionary<string, string?> Inject(Span span)
+        public IReadOnlyDictionary<string, string?> Inject<TContext>(TContext span)
+            where TContext : ISpanContext
         {
-            var map = new StringMap();
+            var map = new StringMap(capacity: 4);
             Inject(span, map);
             return map;
         }

@@ -3,6 +3,7 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/). Copyright 2017 Datadog, Inc.
 // </copyright>
 
+using System.Collections.Generic;
 using Datadog.Trace.ClrProfiler;
 using Datadog.Trace.TestHelpers;
 using FluentAssertions;
@@ -22,7 +23,7 @@ namespace Datadog.Trace.Tests.DistributedTracer
 
             automaticTracer.GetDistributedTrace().Should().BeNull();
 
-            automaticTracer.SetDistributedTrace(new SpanContext(1, 2));
+            automaticTracer.SetDistributedTrace(new SpanContext(1, 2).ToReadOnlyDictionary());
 
             ((IDistributedTracer)automaticTracer).GetSpanContext().Should().BeNull("automatic tracer shouldn't read the distributed trace unless there is a child tracer");
         }
@@ -35,9 +36,9 @@ namespace Datadog.Trace.Tests.DistributedTracer
 
             automaticTracer.GetDistributedTrace().Should().BeNull();
 
-            var expectedSpanContext = new SpanContext(1, 2, SamplingPriority.UserKeep, "Service", "Origin");
+            var expectedSpanContext = new SpanContext(1, 2, (int)SamplingPriority.UserKeep, "Origin");
 
-            automaticTracer.SetDistributedTrace(expectedSpanContext);
+            automaticTracer.SetDistributedTrace(expectedSpanContext.ToReadOnlyDictionary());
 
             var actualSpanContext = ((IDistributedTracer)automaticTracer).GetSpanContext();
 
@@ -53,21 +54,8 @@ namespace Datadog.Trace.Tests.DistributedTracer
             var distributedTracer = (IDistributedTracer)automaticTracer;
             var expectedSpanContext = new SpanContext(1, 2);
 
-            distributedTracer.SetSpanContext(expectedSpanContext);
+            distributedTracer.SetSpanContext(expectedSpanContext.ToReadOnlyDictionary());
             distributedTracer.GetSpanContext().Should().BeEquivalentTo(expectedSpanContext);
-        }
-
-        [Fact]
-        public void LockSamplingPriority()
-        {
-            var manualTracer = new Mock<ICommonTracer>();
-
-            var automaticTracer = new AutomaticTracer();
-            automaticTracer.Register(manualTracer.Object);
-
-            ((IDistributedTracer)automaticTracer).LockSamplingPriority();
-
-            manualTracer.Verify(t => t.LockSamplingPriority(), Times.Once);
         }
 
         [Fact]
@@ -78,20 +66,6 @@ namespace Datadog.Trace.Tests.DistributedTracer
             var samplingPriority = ((IDistributedTracer)automaticTracer).TrySetSamplingPriority(SamplingPriority.UserKeep);
 
             samplingPriority.Should().Be(SamplingPriority.UserKeep, "TrySetSamplingPriority should be pass-through when there is no child");
-        }
-
-        [Fact]
-        public void TrySetSamplingPriority()
-        {
-            var manualTracer = new Mock<ICommonTracer>();
-            manualTracer.Setup(t => t.TrySetSamplingPriority(It.IsAny<int?>())).Returns((int?)SamplingPriority.UserReject);
-
-            var automaticTracer = new AutomaticTracer();
-            automaticTracer.Register(manualTracer.Object);
-
-            var samplingPriority = ((IDistributedTracer)automaticTracer).TrySetSamplingPriority(SamplingPriority.UserKeep);
-
-            samplingPriority.Should().Be(SamplingPriority.UserReject, "TrySetSamplingPriority should return the value given by the child");
         }
 
         [Fact]

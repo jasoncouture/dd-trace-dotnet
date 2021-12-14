@@ -17,30 +17,12 @@ namespace Datadog.Trace.Tests.DistributedTracer
     [TracerRestorer]
     public class DistributedTracerTests
     {
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public void LockSamplingPriority(bool notifyDistributedTracer)
-        {
-            var distributedTracer = new Mock<IDistributedTracer>();
-
-            ClrProfiler.DistributedTracer.SetInstanceOnlyForTests(distributedTracer.Object);
-
-            using var scope = (Scope)Tracer.Instance.StartActive("Test");
-
-            scope.Span.TraceContext.LockSamplingPriority(notifyDistributedTracer);
-
-            Func<Times> expectedInvocations = notifyDistributedTracer ? Times.Once : Times.Never;
-
-            distributedTracer.Verify(t => t.LockSamplingPriority(), expectedInvocations);
-        }
-
         [Fact]
         public void GetSpanContext()
         {
             var distributedTracer = new Mock<IDistributedTracer>();
 
-            var spanContext = new SpanContext(1, 2, SamplingPriority.UserKeep);
+            var spanContext = new SpanContext(1, 2, (int)SamplingPriority.UserKeep, origin: null);
 
             distributedTracer.Setup(t => t.GetSpanContext()).Returns(spanContext);
 

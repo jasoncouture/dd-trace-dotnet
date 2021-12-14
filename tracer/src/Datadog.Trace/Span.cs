@@ -29,38 +29,46 @@ namespace Datadog.Trace
 
         private readonly object _lock = new();
 
-        // using ISpanContext as parent to get the parent span id
-        public Span(ITraceContext trace, ISpanContext parent, ulong? spanId = null, DateTimeOffset? start = null, ITags? tags = null)
+        public Span(ITraceContext trace, ISpan? parent = null, ulong? spanId = null, DateTimeOffset? start = null, ITags? tags = null)
+            : this(trace, (ISpanContext?)parent, spanId, start, tags)
+        {
+            ParentSpan = parent;
+        }
+
+        public Span(ITraceContext trace, ISpanContext? parent = null, ulong? spanId = null, DateTimeOffset? start = null, ITags? tags = null)
             : this(trace, parent?.SpanId, spanId, start, tags)
         {
+            ParentContext = parent;
         }
 
-        // using ISpan as parent to get the parent span id (and keep a reference to the parent ISpan)
-        public Span(ITraceContext trace, ISpan parent, ulong? spanId = null, DateTimeOffset? start = null, ITags? tags = null)
-            : this(trace, parent?.SpanId, spanId, start, tags)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Span"/> class.
+        /// Only for testing without a TraceContext.
+        /// </summary>
+        public Span(ISpanContext? parent = null, ulong? spanId = null, DateTimeOffset? start = null, ITags? tags = null)
+            : this(trace: null!, parent?.SpanId, spanId, start, tags)
         {
-            Parent = parent;
+            ParentContext = parent;
         }
 
-        // using a ulong as the parent span id
-        public Span(ITraceContext trace, ulong? parentSpanId, ulong? spanId = null, DateTimeOffset? start = null, ITags? tags = null)
-            : this(trace, spanId, start, tags)
+        // resolves ambiguity
+        public Span(ITraceContext trace)
+            : this(trace, parentId: null, spanId: null, start: null, tags: null)
         {
-            ParentSpanId = parentSpanId;
         }
 
-        // no parent
-        public Span(ITraceContext trace, ulong? spanId = null, DateTimeOffset? start = null, ITags? tags = null)
+        public Span(ITraceContext trace, ulong? parentId = null, ulong? spanId = null, DateTimeOffset? start = null, ITags? tags = null)
         {
+            ParentId = parentId;
             TraceContext = trace;
             SpanId = spanId ?? SpanIdGenerator.ThreadInstance.CreateNew();
-            StartTime = start ?? trace.UtcNow;
+            StartTime = start ?? trace?.UtcNow ?? DateTimeOffset.UtcNow;
             Tags = tags ?? new CommonTags();
 
             Log.Debug(
                 "Span started: [s_id: {SpanID}, p_id: {ParentId}, t_id: {TraceId}]",
                 SpanId,
-                ParentSpanId,
+                ParentId,
                 TraceId);
         }
 
@@ -94,7 +102,7 @@ namespace Datadog.Trace
         /// <summary>
         /// Gets the trace's unique identifier.
         /// </summary>
-        public ulong TraceId => TraceContext.TraceId;
+        public ulong TraceId => TraceContext?.TraceId ?? ParentContext?.TraceId ?? 0;
 
         /// <summary>
         /// Gets the span's unique identifier.
@@ -104,7 +112,7 @@ namespace Datadog.Trace
         /// <summary>
         /// Gets the identifier of the parent span, if any.
         /// </summary>
-        public ulong? ParentSpanId { get; }
+        public ulong? ParentId { get; }
 
         /// <summary>
         /// Gets <i>local root span id</i>, i.e. the <c>SpanId</c> of the span that is the root of the local, non-reentrant
@@ -119,7 +127,9 @@ namespace Datadog.Trace
 
         public ITags Tags { get; }
 
-        public ISpan? Parent { get; }
+        public ISpan? ParentSpan { get; }
+
+        public ISpanContext? ParentContext { get; }
 
         public ITraceContext TraceContext { get; }
 
@@ -131,7 +141,7 @@ namespace Datadog.Trace
 
         public bool IsRootSpan => TraceContext.RootSpan == this;
 
-        public bool IsTopLevel => Parent?.ServiceName != ServiceName;
+        public bool IsTopLevel => ParentSpan?.ServiceName != ServiceName;
 
         /// <summary>
         /// Record the end time of the span and flushes it to the backend.
@@ -152,7 +162,7 @@ namespace Datadog.Trace
         {
             var sb = new StringBuilder();
             sb.AppendLine($"TraceId: {TraceId}");
-            sb.AppendLine($"ParentId: {ParentSpanId ?? 0}");
+            sb.AppendLine($"ParentId: {ParentId ?? 0}");
             sb.AppendLine($"SpanId: {SpanId}");
             sb.AppendLine($"ServiceName: {ServiceName}");
             sb.AppendLine($"OperationName: {OperationName}");
@@ -378,7 +388,7 @@ namespace Datadog.Trace
                 {
                     Log.Debug(
                         "Span closed: [s_id: {SpanId}, p_id: {ParentId}, t_id: {TraceId}] for (Service: {ServiceName}, Resource: {ResourceName}, Operation: {OperationName}, Tags: [{Tags}])",
-                        new object?[] { SpanId, ParentSpanId, TraceId, ServiceName, ResourceName, OperationName, Tags });
+                        new object?[] { SpanId, ParentId, TraceId, ServiceName, ResourceName, OperationName, Tags });
                 }
             }
         }

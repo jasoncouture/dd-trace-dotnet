@@ -3,6 +3,7 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/). Copyright 2017 Datadog, Inc.
 // </copyright>
 
+using System.Collections.Generic;
 using Datadog.Trace.ClrProfiler;
 using FluentAssertions;
 using Moq;
@@ -15,10 +16,10 @@ namespace Datadog.Trace.Tests.DistributedTracer
         [Fact]
         public void GetSpanContext()
         {
-            var expectedSpanContext = new SpanContext(1, 2, SamplingPriority.UserKeep, "Service", "Origin");
+            var expectedSpanContext = new SpanContext(1, 2, (int)SamplingPriority.UserKeep, "Origin");
 
             var automaticTracer = new Mock<IAutomaticTracer>();
-            automaticTracer.Setup(t => t.GetDistributedTrace()).Returns(expectedSpanContext);
+            automaticTracer.Setup(t => t.GetDistributedTrace()).Returns(expectedSpanContext.ToReadOnlyDictionary());
 
             var manualTracer = new ManualTracer(automaticTracer.Object);
 
@@ -33,35 +34,12 @@ namespace Datadog.Trace.Tests.DistributedTracer
             var automaticTracer = new Mock<IAutomaticTracer>();
             var manualTracer = new ManualTracer(automaticTracer.Object);
 
-            var expectedSpanContext = new SpanContext(1, 2, SamplingPriority.UserKeep, "Service", "Origin");
+            var expectedSpanContext = new SpanContext(1, 2, (int)SamplingPriority.UserKeep, "Origin");
+            var spanContextValue = expectedSpanContext.ToReadOnlyDictionary();
 
-            ((IDistributedTracer)manualTracer).SetSpanContext(expectedSpanContext);
+            ((IDistributedTracer)manualTracer).SetSpanContext(spanContextValue);
 
-            automaticTracer.Verify(t => t.SetDistributedTrace(expectedSpanContext), Times.Once());
-        }
-
-        [Fact]
-        public void LockSamplingPriority()
-        {
-            var automaticTracer = new Mock<IAutomaticTracer>();
-            var manualTracer = new ManualTracer(automaticTracer.Object);
-
-            ((IDistributedTracer)manualTracer).LockSamplingPriority();
-
-            automaticTracer.Verify(t => t.LockSamplingPriority(), Times.Once);
-        }
-
-        [Fact]
-        public void TrySetSamplingPriority()
-        {
-            var automaticTracer = new Mock<IAutomaticTracer>();
-            automaticTracer.Setup(t => t.TrySetSamplingPriority(It.IsAny<int?>())).Returns((int?)SamplingPriority.UserReject);
-
-            var manualTracer = new ManualTracer(automaticTracer.Object);
-
-            var samplingPriority = ((IDistributedTracer)manualTracer).TrySetSamplingPriority(SamplingPriority.UserKeep);
-
-            samplingPriority.Should().Be(SamplingPriority.UserReject, "TrySetSamplingPriority should return the value given by the parent");
+            automaticTracer.Verify(t => t.SetDistributedTrace(spanContextValue), Times.Once());
         }
     }
 }
