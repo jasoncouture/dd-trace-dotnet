@@ -249,7 +249,7 @@ namespace Datadog.Trace.ClrProfiler.IntegrationTests.CI
         private static void CheckCIEnvironmentValuesDecoration(MockTracerAgent.Span targetSpan)
         {
             var context = new SpanContext(null, null, null, null);
-            var span = new Span(context, DateTimeOffset.UtcNow);
+            var span = new Span(DateTimeOffset.UtcNow, context);
             CIEnvironmentValues.DecorateSpan(span);
 
             AssertEqual(CommonTags.CIProvider);

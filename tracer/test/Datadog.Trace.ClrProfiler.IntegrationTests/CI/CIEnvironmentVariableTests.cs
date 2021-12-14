@@ -53,7 +53,7 @@ namespace Datadog.Trace.ClrProfiler.IntegrationTests.CI
                 Dictionary<string, string> envData = testItem[0];
                 Dictionary<string, string> spanData = testItem[1];
 
-                Span span = new Span(context, time);
+                Span span = new Span(time, context);
 
                 SetEnvironmentFromDictionary(envData);
                 CIEnvironmentValues.ReloadEnvironmentData();

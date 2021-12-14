@@ -22,26 +22,45 @@ namespace Datadog.Trace
     /// tracks the duration of an operation as well as associated metadata in
     /// the form of a resource name, a service name, and user defined tags.
     /// </summary>
-    internal partial class Span : ISpan, ISpanParent, ISpanContext
+    internal partial class Span : ISpan, ISpanContext
     {
         private static readonly IDatadogLogger Log = DatadogLogging.GetLoggerFor<Span>();
         private static readonly bool IsLogLevelDebugEnabled = Log.IsEnabled(LogEventLevel.Debug);
 
         private readonly object _lock = new();
 
-        public Span(ISpanParent? parent, ITraceContext trace, ulong? spanId = null, DateTimeOffset? start = null, ITags? tags = null)
+        // using ISpanContext as parent to get the parent span id
+        public Span(ITraceContext trace, ISpanContext parent, ulong? spanId = null, DateTimeOffset? start = null, ITags? tags = null)
+            : this(trace, parent?.SpanId, spanId, start, tags)
         {
-            SpanId = spanId ?? SpanIdGenerator.ThreadInstance.CreateNew();
+        }
 
+        // using ISpan as parent to get the parent span id (and keep a reference to the parent ISpan)
+        public Span(ITraceContext trace, ISpan parent, ulong? spanId = null, DateTimeOffset? start = null, ITags? tags = null)
+            : this(trace, parent?.SpanId, spanId, start, tags)
+        {
             Parent = parent;
+        }
+
+        // using a ulong as the parent span id
+        public Span(ITraceContext trace, ulong? parentSpanId, ulong? spanId = null, DateTimeOffset? start = null, ITags? tags = null)
+            : this(trace, spanId, start, tags)
+        {
+            ParentSpanId = parentSpanId;
+        }
+
+        // no parent
+        public Span(ITraceContext trace, ulong? spanId = null, DateTimeOffset? start = null, ITags? tags = null)
+        {
             TraceContext = trace;
+            SpanId = spanId ?? SpanIdGenerator.ThreadInstance.CreateNew();
             StartTime = start ?? trace.UtcNow;
             Tags = tags ?? new CommonTags();
 
             Log.Debug(
                 "Span started: [s_id: {SpanID}, p_id: {ParentId}, t_id: {TraceId}]",
                 SpanId,
-                parent?.SpanId,
+                ParentSpanId,
                 TraceId);
         }
 
@@ -83,6 +102,11 @@ namespace Datadog.Trace
         public ulong SpanId { get; }
 
         /// <summary>
+        /// Gets the identifier of the parent span, if any.
+        /// </summary>
+        public ulong? ParentSpanId { get; }
+
+        /// <summary>
         /// Gets <i>local root span id</i>, i.e. the <c>SpanId</c> of the span that is the root of the local, non-reentrant
         /// sub-operation of the distributed operation that is represented by the trace that contains this span.
         /// </summary>
@@ -95,7 +119,7 @@ namespace Datadog.Trace
 
         public ITags Tags { get; }
 
-        public ISpanParent? Parent { get; }
+        public ISpan? Parent { get; }
 
         public ITraceContext TraceContext { get; }
 
@@ -107,7 +131,7 @@ namespace Datadog.Trace
 
         public bool IsRootSpan => TraceContext.RootSpan == this;
 
-        public bool IsTopLevel => (Parent as ISpan)?.ServiceName != ServiceName;
+        public bool IsTopLevel => Parent?.ServiceName != ServiceName;
 
         /// <summary>
         /// Record the end time of the span and flushes it to the backend.
@@ -128,7 +152,7 @@ namespace Datadog.Trace
         {
             var sb = new StringBuilder();
             sb.AppendLine($"TraceId: {TraceId}");
-            sb.AppendLine($"ParentId: {Parent?.SpanId ?? 0}");
+            sb.AppendLine($"ParentId: {ParentSpanId ?? 0}");
             sb.AppendLine($"SpanId: {SpanId}");
             sb.AppendLine($"ServiceName: {ServiceName}");
             sb.AppendLine($"OperationName: {OperationName}");
@@ -354,7 +378,7 @@ namespace Datadog.Trace
                 {
                     Log.Debug(
                         "Span closed: [s_id: {SpanId}, p_id: {ParentId}, t_id: {TraceId}] for (Service: {ServiceName}, Resource: {ResourceName}, Operation: {OperationName}, Tags: [{Tags}])",
-                        new object?[] { SpanId, Parent?.SpanId ?? 0, TraceId, ServiceName, ResourceName, OperationName, Tags });
+                        new object?[] { SpanId, ParentSpanId, TraceId, ServiceName, ResourceName, OperationName, Tags });
                 }
             }
         }

@@ -18,9 +18,9 @@ namespace Datadog.Trace
     /// </summary>
     internal partial class Span : ISpanContext
     {
-        string ISpanContext.TraceId => TraceContext.TraceId.ToString(CultureInfo.InvariantCulture);
+        ulong ISpanContext.TraceId => TraceContext.TraceId;
 
-        string ISpanContext.SpanId => SpanId.ToString(CultureInfo.InvariantCulture);
+        ulong ISpanContext.SpanId => SpanId;
 
         IEnumerable<KeyValuePair<string, string>> ISpanContext.GetBaggageItems()
         {

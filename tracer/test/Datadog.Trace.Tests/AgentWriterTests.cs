@@ -33,7 +33,7 @@ namespace Datadog.Trace.Tests
         [Fact]
         public async Task WriteTrace_2Traces_SendToApi()
         {
-            var trace = new[] { new Span(new SpanContext(1, 1), DateTimeOffset.UtcNow) };
+            var trace = new[] { new Span(DateTimeOffset.UtcNow, new SpanContext(1, 1)) };
             var expectedData1 = Vendors.MessagePack.MessagePackSerializer.Serialize(trace, new FormatterResolverWrapper(SpanFormatterResolver.Instance));
 
             _agentWriter.WriteTrace(new ArraySegment<Span>(trace));
@@ -43,7 +43,7 @@ namespace Datadog.Trace.Tests
 
             _api.Invocations.Clear();
 
-            trace = new[] { new Span(new SpanContext(2, 2), DateTimeOffset.UtcNow) };
+            trace = new[] { new Span(DateTimeOffset.UtcNow, new SpanContext(2, 2)) };
             var expectedData2 = Vendors.MessagePack.MessagePackSerializer.Serialize(trace, new FormatterResolverWrapper(SpanFormatterResolver.Instance));
 
             _agentWriter.WriteTrace(new ArraySegment<Span>(trace));
@@ -263,8 +263,8 @@ namespace Datadog.Trace.Tests
             tracer.Setup(x => x.DefaultServiceName).Returns("Default");
             var traceContext = new TraceContext(tracer.Object);
             var rootSpanContext = new SpanContext(null, traceContext, null);
-            var rootSpan = new Span(rootSpanContext, DateTimeOffset.UtcNow);
-            var childSpan = new Span(new SpanContext(rootSpanContext, traceContext, null), DateTimeOffset.UtcNow);
+            var rootSpan = new Span(DateTimeOffset.UtcNow, rootSpanContext);
+            var childSpan = new Span(DateTimeOffset.UtcNow, new SpanContext(rootSpanContext, traceContext, null));
             traceContext.AddSpan(rootSpan);
             traceContext.AddSpan(childSpan);
             var trace = new ArraySegment<Span>(new[] { rootSpan, childSpan });
@@ -323,7 +323,7 @@ namespace Datadog.Trace.Tests
                     return Task.FromResult(true);
                 });
 
-            var trace = new ArraySegment<Span>(new[] { new Span(new SpanContext(1, 1), DateTimeOffset.UtcNow) });
+            var trace = new ArraySegment<Span>(new[] { new Span(DateTimeOffset.UtcNow, new SpanContext(1, 1)) });
 
             // Write trace to the front buffer
             agentWriter.WriteTrace(trace);
@@ -369,7 +369,7 @@ namespace Datadog.Trace.Tests
         private static ArraySegment<Span> CreateTrace(int numberOfSpans)
         {
             var array = Enumerable.Range(0, numberOfSpans)
-                .Select(i => new Span(new SpanContext((ulong)i + 1, (ulong)i + 1), DateTimeOffset.UtcNow))
+                .Select(i => new Span(DateTimeOffset.UtcNow, new SpanContext((ulong)i + 1, (ulong)i + 1)))
                 .ToArray();
 
             return new ArraySegment<Span>(array);

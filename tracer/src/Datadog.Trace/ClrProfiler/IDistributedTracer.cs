@@ -9,7 +9,7 @@ namespace Datadog.Trace.ClrProfiler
 {
     internal interface IDistributedTracer
     {
-        SpanContext? GetSpanContext();
+        SpanContext GetSpanContext();
 
         IScope GetActiveScope();
 

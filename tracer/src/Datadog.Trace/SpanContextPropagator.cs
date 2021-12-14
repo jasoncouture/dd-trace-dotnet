@@ -43,8 +43,8 @@ namespace Datadog.Trace
 
             if (headers == null) { throw new ArgumentNullException(nameof(headers)); }
 
-            headers.Set(HttpHeaderNames.TraceId, spanContext.TraceId);
-            headers.Set(HttpHeaderNames.ParentId, spanContext.SpanId);
+            headers.Set(HttpHeaderNames.TraceId, spanContext.TraceId.ToString(InvariantCulture));
+            headers.Set(HttpHeaderNames.ParentId, spanContext.SpanId.ToString(InvariantCulture));
 
             foreach (KeyValuePair<string, string> baggageItem in spanContext.GetBaggageItems())
             {
@@ -67,8 +67,8 @@ namespace Datadog.Trace
 
             if (setter == null) { throw new ArgumentNullException(nameof(setter)); }
 
-            setter(carrier, HttpHeaderNames.TraceId, spanContext.TraceId);
-            setter(carrier, HttpHeaderNames.ParentId, spanContext.SpanId);
+            setter(carrier, HttpHeaderNames.TraceId, spanContext.TraceId.ToString(InvariantCulture));
+            setter(carrier, HttpHeaderNames.ParentId, spanContext.SpanId.ToString(InvariantCulture));
 
             foreach (KeyValuePair<string, string> baggageItem in spanContext.GetBaggageItems())
             {

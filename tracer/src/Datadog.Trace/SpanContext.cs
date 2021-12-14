@@ -13,32 +13,29 @@ namespace Datadog.Trace
     /// <summary>
     /// TODO: document and make public
     /// </summary>
-    internal readonly struct SpanContext : ISpanContext, ISpanParent
+    internal class SpanContext : ISpanContext
     {
-        private readonly ulong _traceId;
-        private readonly ulong _spanId;
-        private readonly int? _samplingPriority;
-        private readonly string? _origin;
+        public SpanContext(ulong traceId, ulong spanId)
+        {
+            TraceId = traceId;
+            SpanId = spanId;
+        }
 
         public SpanContext(ulong traceId, ulong spanId, int? samplingPriority, string? origin)
         {
-            _traceId = traceId;
-            _spanId = spanId;
-            _samplingPriority = samplingPriority;
-            _origin = origin;
+            TraceId = traceId;
+            SpanId = spanId;
+            SamplingPriority = samplingPriority;
+            Origin = origin;
         }
 
-        public ulong TraceId => _traceId;
+        public ulong TraceId { get; }
 
-        public ulong SpanId => _spanId;
+        public ulong SpanId { get; }
 
-        public int? SamplingPriority => _samplingPriority;
+        public int? SamplingPriority { get; }
 
-        public string? Origin => _origin;
-
-        string ISpanContext.TraceId => TraceId.ToString(CultureInfo.InvariantCulture);
-
-        string ISpanContext.SpanId => TraceId.ToString(CultureInfo.InvariantCulture);
+        public string? Origin { get; }
 
         IEnumerable<KeyValuePair<string, string>> ISpanContext.GetBaggageItems()
         {

@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Datadog.Trace.Agent;
 using Datadog.Trace.Agent.MessagePack;
+using Moq;
 using Xunit;
 
 namespace Datadog.Trace.Tests.Agent
@@ -21,17 +22,19 @@ namespace Datadog.Trace.Tests.Agent
         [InlineData(50, 50, true)]
         public void SerializeSpans(int traceCount, int spanCount, bool resizeExpected)
         {
+            var tracer = new Mock<IDatadogTracer>();
             var buffer = new SpanBuffer(10 * 1024 * 1024, SpanFormatterResolver.Instance);
-
             var traces = new List<ArraySegment<Span>>();
 
             for (int i = 0; i < traceCount; i++)
             {
+                var traceContext = new TraceContext(tracer.Object);
                 var spans = new Span[spanCount];
 
                 for (int j = 0; j < spanCount; j++)
                 {
-                    spans[j] = new Span(new SpanContext((ulong)i, (ulong)i), DateTimeOffset.UtcNow);
+                    var spanContext = new SpanContext((ulong)i, (ulong)i);
+                    spans[j] = new Span(traceContext, spanContext, start: DateTimeOffset.UtcNow);
                 }
 
                 traces.Add(new ArraySegment<Span>(spans));
@@ -68,7 +71,7 @@ namespace Datadog.Trace.Tests.Agent
 
             Assert.False(buffer.IsFull);
 
-            var trace = new ArraySegment<Span>(new[] { new Span(new SpanContext(1, 1), DateTimeOffset.UtcNow) });
+            var trace = new ArraySegment<Span>(new[] { new Span(DateTimeOffset.UtcNow, new SpanContext(1, 1)) });
 
             var result = buffer.TryWrite(trace, ref _temporaryBuffer);
 
@@ -92,7 +95,7 @@ namespace Datadog.Trace.Tests.Agent
         {
             var buffer = new SpanBuffer(10 * 1024 * 1024, SpanFormatterResolver.Instance);
 
-            var trace = new ArraySegment<Span>(new[] { new Span(new SpanContext(1, 1), DateTimeOffset.UtcNow) });
+            var trace = new ArraySegment<Span>(new[] { new Span(DateTimeOffset.UtcNow, new SpanContext(1, 1)) });
 
             Assert.True(buffer.TryWrite(trace, ref _temporaryBuffer));
 
@@ -112,9 +115,9 @@ namespace Datadog.Trace.Tests.Agent
 
             var trace = new ArraySegment<Span>(new[]
             {
-                new Span(new SpanContext(1, 1), DateTimeOffset.UtcNow),
-                new Span(new SpanContext(2, 2), DateTimeOffset.UtcNow),
-                new Span(new SpanContext(3, 3), DateTimeOffset.UtcNow),
+                new Span(DateTimeOffset.UtcNow, new SpanContext(1, 1)),
+                new Span(DateTimeOffset.UtcNow, new SpanContext(2, 2)),
+                new Span(DateTimeOffset.UtcNow, new SpanContext(3, 3)),
             });
 
             Assert.True(buffer.TryWrite(trace, ref _temporaryBuffer));

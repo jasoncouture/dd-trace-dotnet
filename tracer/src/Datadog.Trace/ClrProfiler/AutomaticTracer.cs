@@ -31,14 +31,7 @@ namespace Datadog.Trace.ClrProfiler
                 return null;
             }
 
-            var value = DistributedTrace.Value;
-
-            if (value is SpanContext spanContext)
-            {
-                return spanContext;
-            }
-
-            return SpanContextPropagator.Instance.Extract(value);
+            return SpanContextPropagator.Instance.Extract(DistributedTrace.Value);
         }
 
         void IDistributedTracer.SetSpanContext(IReadOnlyDictionary<string, string> value)

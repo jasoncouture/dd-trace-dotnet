@@ -23,7 +23,7 @@ namespace Datadog.Trace.Tests.Tagging
         public void GetTag_GetMetric_ReturnUpdatedValues()
         {
             var tags = new CommonTags();
-            var span = new Span(new SpanContext(42, 41), DateTimeOffset.UtcNow, tags);
+            var span = new Span(DateTimeOffset.UtcNow, new SpanContext(42, 41), tags);
 
             tags.Environment = "Test";
             tags.SamplingLimitDecision = 0.5;
@@ -87,14 +87,14 @@ namespace Datadog.Trace.Tests.Tagging
 
             if (topLevelSpan)
             {
-                span = new Span(new SpanContext(42, 41), DateTimeOffset.UtcNow, tags);
+                span = new Span(DateTimeOffset.UtcNow, new SpanContext(42, 41), tags);
             }
             else
             {
                 // Assign a parent to prevent the span from being considered as top-level
                 var traceContext = new TraceContext(Mock.Of<IDatadogTracer>());
                 var parent = new SpanContext(42, 41);
-                span = new Span(new SpanContext(parent, traceContext, null), DateTimeOffset.UtcNow, tags);
+                span = new Span(DateTimeOffset.UtcNow, new SpanContext(parent, traceContext, null), tags);
             }
 
             // The span has 1 "common" tag and 15 additional tags (and same number of metrics)

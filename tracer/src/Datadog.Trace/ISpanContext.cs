@@ -15,12 +15,12 @@ namespace Datadog.Trace
         /// <summary>
         /// Gets the trace identifier.
         /// </summary>
-        string TraceId { get; }
+        ulong TraceId { get; }
 
         /// <summary>
         /// Gets the span identifier.
         /// </summary>
-        string SpanId { get; }
+        ulong SpanId { get; }
 
         /// <summary>
         /// Gets the zero or more baggage items that propagate along with the associated span.
