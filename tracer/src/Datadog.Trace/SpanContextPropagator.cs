@@ -35,59 +35,47 @@ namespace Datadog.Trace
         /// <summary>
         /// Propagates the specified context by adding new headers to a <see cref="IHeadersCollection"/>.
         /// </summary>
-        /// <typeparam name="T">Type of header collection</typeparam>
-        public void Inject<T>(Span span, T headers)
-            where T : IHeadersCollection
+        public void Inject<TContext, THeaders>(TContext spanContext, THeaders headers)
+            where TContext : ISpanContext
+            where THeaders : IHeadersCollection
         {
-            if (span == null) { throw new ArgumentNullException(nameof(span)); }
+            if (spanContext == null) { throw new ArgumentNullException(nameof(spanContext)); }
 
             if (headers == null) { throw new ArgumentNullException(nameof(headers)); }
 
-            headers.Set(HttpHeaderNames.TraceId, span.TraceId.ToString(InvariantCulture));
-            headers.Set(HttpHeaderNames.ParentId, span.SpanId.ToString(InvariantCulture));
+            headers.Set(HttpHeaderNames.TraceId, spanContext.TraceId);
+            headers.Set(HttpHeaderNames.ParentId, spanContext.SpanId);
 
-            var origin = span.TraceContext.Origin;
-
-            if (origin != null)
+            foreach (KeyValuePair<string, string> baggageItem in spanContext.GetBaggageItems())
             {
-                headers.Set(HttpHeaderNames.Origin, origin);
-            }
-
-            var samplingPriority = span.TraceContext.SamplingPriority;
-
-            if (samplingPriority != null)
-            {
-                headers.Set(HttpHeaderNames.SamplingPriority, ((int)samplingPriority).ToString(InvariantCulture));
+                if (baggageItem.Value != null)
+                {
+                    headers.Set(baggageItem.Key, baggageItem.Value);
+                }
             }
         }
 
         /// <summary>
         /// Propagates the specified context by adding new headers to a <see cref="IHeadersCollection"/>.
         /// </summary>
-        /// <typeparam name="T">Type of header collection</typeparam>
-        public void Inject<T>(Span span, T carrier, Action<T, string, string> setter)
+        public void Inject<TContext, TCarrier>(TContext spanContext, TCarrier carrier, Action<TCarrier, string, string> setter)
+            where TContext : ISpanContext
         {
-            if (span == null) { throw new ArgumentNullException(nameof(span)); }
+            if (spanContext == null) { throw new ArgumentNullException(nameof(spanContext)); }
 
             if (carrier == null) { throw new ArgumentNullException(nameof(carrier)); }
 
             if (setter == null) { throw new ArgumentNullException(nameof(setter)); }
 
-            setter(carrier, HttpHeaderNames.TraceId, span.TraceId.ToString(InvariantCulture));
-            setter(carrier, HttpHeaderNames.ParentId, span.SpanId.ToString(InvariantCulture));
+            setter(carrier, HttpHeaderNames.TraceId, spanContext.TraceId);
+            setter(carrier, HttpHeaderNames.ParentId, spanContext.SpanId);
 
-            var origin = span.TraceContext.Origin;
-
-            if (origin != null)
+            foreach (KeyValuePair<string, string> baggageItem in spanContext.GetBaggageItems())
             {
-                setter(carrier, HttpHeaderNames.Origin, origin);
-            }
-
-            var samplingPriority = span.TraceContext.SamplingPriority;
-
-            if (samplingPriority != null)
-            {
-                setter(carrier, HttpHeaderNames.SamplingPriority, ((int)samplingPriority).ToString(InvariantCulture));
+                if (baggageItem.Value != null)
+                {
+                    setter(carrier, baggageItem.Key, baggageItem.Value);
+                }
             }
         }
 

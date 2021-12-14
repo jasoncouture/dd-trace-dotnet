@@ -246,7 +246,7 @@ namespace Datadog.Trace
         /// <param name="ignoreActiveScope">If set the span will not be a child of the currently active span</param>
         /// <param name="finishOnClose">If set to false, closing the returned scope will not close the enclosed span </param>
         /// <returns>A scope wrapping the newly created span</returns>
-        public IScope StartActive(string operationName, ISpanContext parent = null, string serviceName = null, DateTimeOffset? startTime = null, bool ignoreActiveScope = false, bool finishOnClose = true)
+        public IScope StartActive(string operationName, ISpanParent parent = null, string serviceName = null, DateTimeOffset? startTime = null, bool ignoreActiveScope = false, bool finishOnClose = true)
         {
             var span = StartSpan(operationName, parent: parent, serviceName: serviceName, startTime: startTime, ignoreActiveScope: ignoreActiveScope);
             return TracerManager.ScopeManager.Activate(span, finishOnClose);
@@ -261,7 +261,7 @@ namespace Datadog.Trace
         /// <param name="startTime">An explicit start time for that span</param>
         /// <param name="ignoreActiveScope">If set the span will not be a child of the currently active span</param>
         /// <returns>The newly created span</returns>
-        ISpan IDatadogOpenTracingTracer.StartSpan(string operationName, ISpanContext parent, string serviceName, DateTimeOffset? startTime, bool ignoreActiveScope)
+        ISpan IDatadogOpenTracingTracer.StartSpan(string operationName, ISpanParent parent, string serviceName, DateTimeOffset? startTime, bool ignoreActiveScope)
         {
             return StartSpan(operationName, parent, serviceName, startTime, ignoreActiveScope);
         }
@@ -305,22 +305,22 @@ namespace Datadog.Trace
         /// <param name="startTime">An explicit start time for that span</param>
         /// <param name="ignoreActiveScope">If set the span will not be a child of the currently active span</param>
         /// <returns>The newly created span</returns>
-        internal Span StartSpan(string operationName, ISpanContext parent = null, string serviceName = null, DateTimeOffset? startTime = null, bool ignoreActiveScope = false)
+        internal Span StartSpan(string operationName, ISpanParent parent = null, string serviceName = null, DateTimeOffset? startTime = null, bool ignoreActiveScope = false)
         {
             return StartSpan(operationName, tags: null, parent, serviceName, startTime, ignoreActiveScope);
         }
 
-        internal Scope StartActiveInternal(string operationName, ISpanContext parent = null, string serviceName = null, DateTimeOffset? startTime = null, bool ignoreActiveScope = false, bool finishOnClose = true, ITags tags = null)
+        internal Scope StartActiveInternal(string operationName, ISpanParent parent = null, string serviceName = null, DateTimeOffset? startTime = null, bool ignoreActiveScope = false, bool finishOnClose = true, ITags tags = null)
         {
             var span = StartSpan(operationName, tags, parent, serviceName, startTime, ignoreActiveScope);
             return TracerManager.ScopeManager.Activate(span, finishOnClose);
         }
 
-        internal Span StartSpan(string operationName, ITags tags, ISpanContext parent = null, string serviceName = null, DateTimeOffset? startTime = null, bool ignoreActiveScope = false, ulong? traceId = null, ulong? spanId = null, bool addToTraceContext = true)
+        internal Span StartSpan(string operationName, ITags tags, ISpanParent parent = null, string serviceName = null, DateTimeOffset? startTime = null, bool ignoreActiveScope = false, ulong? traceId = null, ulong? spanId = null, bool addToTraceContext = true)
         {
             if (parent == null && !ignoreActiveScope)
             {
-                parent = (ISpanContext)DistributedTracer.Instance.GetSpanContext() ?? TracerManager.ScopeManager.Active?.Span;
+                parent = (ISpanParent)DistributedTracer.Instance.GetSpanContext() ?? TracerManager.ScopeManager.Active?.Span;
             }
 
             ITraceContext traceContext = new TraceContext(this, traceId);

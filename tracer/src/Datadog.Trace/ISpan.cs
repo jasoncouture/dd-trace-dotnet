@@ -13,8 +13,18 @@ namespace Datadog.Trace
     /// tracks the duration of an operation as well as associated metadata in
     /// the form of a resource name, a service name, and user defined tags.
     /// </summary>
-    public interface ISpan : ISpanContext, IDisposable
+    public interface ISpan : IDisposable
     {
+        /// <summary>
+        /// Gets the trace's unique identifier.
+        /// </summary>
+        ulong TraceId { get; }
+
+        /// <summary>
+        /// Gets the span's unique identifier.
+        /// </summary>
+        ulong SpanId { get; }
+
         /// <summary>
         /// Gets or sets operation name
         /// </summary>

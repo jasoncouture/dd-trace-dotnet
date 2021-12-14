@@ -22,17 +22,16 @@ namespace Datadog.Trace
     /// tracks the duration of an operation as well as associated metadata in
     /// the form of a resource name, a service name, and user defined tags.
     /// </summary>
-    internal partial class Span : ISpan, ISpanContext
+    internal partial class Span : ISpan, ISpanParent, ISpanContext
     {
         private static readonly IDatadogLogger Log = DatadogLogging.GetLoggerFor<Span>();
         private static readonly bool IsLogLevelDebugEnabled = Log.IsEnabled(LogEventLevel.Debug);
 
         private readonly object _lock = new();
 
-        public Span(ISpanContext? parent, ITraceContext trace, ulong? spanId = null, DateTimeOffset? start = null, ITags? tags = null)
+        public Span(ISpanParent? parent, ITraceContext trace, ulong? spanId = null, DateTimeOffset? start = null, ITags? tags = null)
         {
             SpanId = spanId ?? SpanIdGenerator.ThreadInstance.CreateNew();
-            TraceId = trace.TraceId;
 
             Parent = parent;
             TraceContext = trace;
@@ -76,7 +75,7 @@ namespace Datadog.Trace
         /// <summary>
         /// Gets the trace's unique identifier.
         /// </summary>
-        public ulong TraceId { get; }
+        public ulong TraceId => TraceContext.TraceId;
 
         /// <summary>
         /// Gets the span's unique identifier.
@@ -96,7 +95,7 @@ namespace Datadog.Trace
 
         public ITags Tags { get; }
 
-        public ISpanContext? Parent { get; }
+        public ISpanParent? Parent { get; }
 
         public ITraceContext TraceContext { get; }
 
