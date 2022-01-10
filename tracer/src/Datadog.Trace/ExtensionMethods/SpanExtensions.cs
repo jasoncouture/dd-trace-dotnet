@@ -5,10 +5,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.Data;
-using System.Data.Common;
 using Datadog.Trace.Configuration;
 using Datadog.Trace.Headers;
+using Datadog.Trace.Sampling;
 using Datadog.Trace.Tagging;
 using Datadog.Trace.Util;
 using Datadog.Trace.Vendors.Serilog;
@@ -25,13 +24,29 @@ namespace Datadog.Trace.ExtensionMethods
         /// </summary>
         /// <param name="span">A span that belongs to the trace.</param>
         /// <param name="samplingPriority">The new sampling priority for the trace.</param>
+        /// <remarks>
+        /// This public method is for SDK users only (aka custom instrumentation).
+        /// Internal Datadog calls should use SetTraceSamplingDecision(this ISpan, SamplingPriority, SamplingMechanism).
+        /// </remarks>
         public static void SetTraceSamplingPriority(this ISpan span, SamplingPriority samplingPriority)
+        {
+            span.SetTraceSamplingDecision(samplingPriority, SamplingMechanism.Manual);
+        }
+
+        /// <summary>
+        /// Sets the sampling priority for the trace that contains the specified <see cref="ISpan"/>.
+        /// </summary>
+        /// <param name="span">A span that belongs to the trace.</param>
+        /// <param name="priority">The new sampling priority for the trace.</param>
+        /// <param name="mechanism">The new sampling mechanism for the trace.</param>
+        /// <param name="rate">Optional. The sampling rate if any was used.</param>
+        internal static void SetTraceSamplingDecision(this ISpan span, SamplingPriority priority, SamplingMechanism mechanism, float? rate = null)
         {
             if (span == null) { ThrowHelper.ThrowArgumentNullException(nameof(span)); }
 
             if (span.Context is SpanContext spanContext && spanContext.TraceContext != null)
             {
-                spanContext.TraceContext.SamplingPriority = samplingPriority;
+                spanContext.TraceContext.SamplingDecision = new SamplingDecision(priority, mechanism, rate);
             }
         }
 
