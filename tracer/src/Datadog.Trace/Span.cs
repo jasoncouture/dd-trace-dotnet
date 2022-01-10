@@ -5,7 +5,6 @@
 
 using System;
 using System.Globalization;
-using System.Text;
 using Datadog.Trace.ExtensionMethods;
 using Datadog.Trace.Logging;
 using Datadog.Trace.Tagging;
