@@ -78,6 +78,7 @@ partial class Build
     [LazyPathExecutable(name: "fpm")] readonly Lazy<Tool> Fpm;
     [LazyPathExecutable(name: "gzip")] readonly Lazy<Tool> GZip;
     [LazyPathExecutable(name: "cmd")] readonly Lazy<Tool> Cmd;
+    [LazyPathExecutable(name: "chmod")] readonly Lazy<Tool> Chmod;
 
     IEnumerable<MSBuildTargetPlatform> ArchitecturesForPlatform =>
         Equals(TargetPlatform, MSBuildTargetPlatform.x64)
@@ -1080,6 +1081,13 @@ partial class Build
         .Requires(() => Framework)
         .Executes(() =>
         {
+            // GRPC runs a tool, which apparently isn't automatically marked as executable
+            var grpcTools = GlobFiles(NugetPackageDirectory / "grpc.tools", "**/tools/linux_*/*");
+            foreach (var toolPath in grpcTools)
+            {
+                Chmod.Value.Invoke(" +x " + toolPath);
+            }
+
             // There's nothing specifically linux-y here, it's just that we only build a subset of projects
             // for testing on linux.
             var sampleProjects = TracerDirectory.GlobFiles("test/test-applications/integrations/*/*.csproj");
@@ -1150,6 +1158,8 @@ partial class Build
                         "Samples.AspNetCore2" => Framework == TargetFramework.NETCOREAPP2_1,
                         "Samples.AspNetCore5" => Framework == TargetFramework.NET6_0 || Framework == TargetFramework.NET5_0 || Framework == TargetFramework.NETCOREAPP3_1 || Framework == TargetFramework.NETCOREAPP3_0,
                         "Samples.GraphQL4" => Framework == TargetFramework.NETCOREAPP3_1 || Framework == TargetFramework.NET5_0 || Framework == TargetFramework.NET6_0,
+                        "Samples.Grpc" => !IsAlpine && Framework != TargetFramework.NET461 && Framework != TargetFramework.NETCOREAPP2_1,
+                        "Samples.GrpcLegacy" => !IsAlpine,
                         var name when projectsToSkip.Contains(name) => false,
                         var name when multiPackageProjects.Contains(name) => false,
                         "Samples.AspNetCoreRazorPages" => true,
