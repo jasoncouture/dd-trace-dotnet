@@ -159,7 +159,7 @@ stages:
     - script: tracer\build.cmd BuildTracerHome
       displayName: Build tracer home
 
-    - script: tracer\build.cmd BuildMonitoringHome
+    - script: tracer\build.cmd BuildNativeLoader
       displayName: Build monitoring home
 
     - publish: $(tracerHome)
@@ -1596,7 +1596,7 @@ stages:
       displayName: Download windows native binary
       inputs:
         artifact: windows-tracer-home
-        path: $(System.DefaultWorkingDirectory)/tracer/bin/tracer-home
+        path: $(System.DefaultWorkingDirectory)/shared/bin/monitoring-home/Tracer
 
     - task: DotNetCoreCLI@2
       inputs:
