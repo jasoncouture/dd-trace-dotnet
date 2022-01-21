@@ -21,11 +21,12 @@ namespace Datadog.Trace.Sampling
         private readonly string _serviceNameRegex;
         private readonly string _operationNameRegex;
 
-        private bool _hasPoisonedRegex = false;
+        private bool _hasPoisonedRegex;
 
         public CustomSamplingRule(
             float rate,
             string ruleName,
+            SamplingMechanism samplingMechanism,
             string serviceNameRegex,
             string operationNameRegex)
         {
@@ -33,12 +34,15 @@ namespace Datadog.Trace.Sampling
             _serviceNameRegex = WrapWithLineCharacters(serviceNameRegex);
             _operationNameRegex = WrapWithLineCharacters(operationNameRegex);
             RuleName = ruleName;
+            SamplingMechanism = samplingMechanism;
         }
 
         public string RuleName { get; }
 
+        public SamplingMechanism SamplingMechanism { get; }
+
         /// <summary>
-        /// Gets or sets the priority of the rule.
+        /// Gets or sets the priority of the rule. Higher numbers mean higher priority.
         /// Configuration rules will default to 1 as a priority and rely on order of specification.
         /// </summary>
         public int Priority { get; protected set; } = 1;
@@ -49,14 +53,8 @@ namespace Datadog.Trace.Sampling
             {
                 if (!string.IsNullOrEmpty(configuration))
                 {
-                    var index = 0;
                     var rules = JsonConvert.DeserializeObject<List<CustomRuleConfig>>(configuration);
-                    return rules.Select(
-                        r =>
-                        {
-                            index++; // Used to create a readable rule name if one is not specified
-                            return new CustomSamplingRule(r.SampleRate, r.RuleName ?? $"config-rule-{index}", r.Service, r.OperationName);
-                        });
+                    return rules.Select((r, index) => new CustomSamplingRule(r.SampleRate, r.RuleName ?? $"config-rule-{index}", SamplingMechanism.Rule, r.Service, r.OperationName));
                 }
             }
             catch (Exception ex)

@@ -4,6 +4,7 @@
 // </copyright>
 
 using System;
+using Datadog.Trace.Sampling;
 using Datadog.Trace.Util;
 using FluentAssertions;
 using Moq;
@@ -140,7 +141,7 @@ namespace Datadog.Trace.Tests
 
             var traceContext = new TraceContext(tracer.Object)
             {
-                SamplingPriority = SamplingPriority.UserKeep
+                SamplingDecision = new SamplingDecision(SamplingPriority.UserKeep, SamplingMechanism.Unknown)
             };
 
             var rootSpan = CreateSpan();
@@ -193,7 +194,7 @@ namespace Datadog.Trace.Tests
 
             var traceContext = new TraceContext(tracer.Object)
             {
-                SamplingPriority = SamplingPriority.UserKeep
+                SamplingDecision = new SamplingDecision(SamplingPriority.UserKeep, SamplingMechanism.Unknown)
             };
 
             var rootSpan = CreateSpan();

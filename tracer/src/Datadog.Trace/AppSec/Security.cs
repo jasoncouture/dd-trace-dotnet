@@ -14,6 +14,7 @@ using Datadog.Trace.AppSec.Waf.ReturnTypes.Managed;
 using Datadog.Trace.ExtensionMethods;
 using Datadog.Trace.Headers;
 using Datadog.Trace.Logging;
+using Datadog.Trace.Sampling;
 using Datadog.Trace.Vendors.Newtonsoft.Json;
 using Datadog.Trace.Vendors.Serilog.Events;
 
@@ -248,9 +249,12 @@ namespace Datadog.Trace.AppSec
         private void Report(ITransport transport, Span span, string resultData, bool blocked)
         {
             span.SetTag(Tags.AppSecEvent, "true");
-            var samplingPirority = _settings.KeepTraces
+
+            // NOTE: DD_APPSEC_KEEP_TRACES=false means "drop all traces" and should only be used for testing.
+            // It does not mean "don't keep all traces i.e. don't do anything".
+            var samplingPriority = _settings.KeepTraces
                                        ? SamplingPriority.UserKeep : SamplingPriority.AutoReject;
-            span.SetTraceSamplingPriority(samplingPirority);
+            span.SetTraceSamplingDecision(samplingPriority, SamplingMechanism.AppSec);
 
             LogMatchesIfDebugEnabled(resultData, blocked);
 

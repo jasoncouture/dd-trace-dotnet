@@ -7,6 +7,7 @@ using System;
 using System.Globalization;
 using Datadog.Trace.ExtensionMethods;
 using Datadog.Trace.Logging;
+using Datadog.Trace.Sampling;
 using Datadog.Trace.Tagging;
 using Datadog.Trace.Util;
 using Datadog.Trace.Vendors.Serilog.Events;
@@ -115,6 +116,7 @@ namespace Datadog.Trace
 
         internal bool IsRootSpan => Context.TraceContext?.RootSpan == this;
 
+        // TODO: set this in the ctor to remove need to access the parent
         internal bool IsTopLevel => Context.Parent == null || Context.Parent.ServiceName != ServiceName;
 
         /// <summary>
@@ -176,7 +178,7 @@ namespace Datadog.Trace
                         Enum.IsDefined(typeof(SamplingPriority), samplingPriority))
                     {
                         // allow setting the sampling priority via a tag
-                        Context.TraceContext.SamplingPriority = samplingPriority;
+                        Context.TraceContext.SamplingDecision = new SamplingDecision(samplingPriority, SamplingMechanism.Manual);
                     }
 
                     break;
@@ -184,7 +186,7 @@ namespace Datadog.Trace
                     if (value?.ToBoolean() == true)
                     {
                         // user-friendly tag to set UserKeep priority
-                        Context.TraceContext.SamplingPriority = SamplingPriority.UserKeep;
+                        Context.TraceContext.SamplingDecision = new SamplingDecision(SamplingPriority.UserKeep, SamplingMechanism.Manual);
                     }
 
                     break;
@@ -192,7 +194,7 @@ namespace Datadog.Trace
                     if (value?.ToBoolean() == true)
                     {
                         // user-friendly tag to set UserReject priority
-                        Context.TraceContext.SamplingPriority = SamplingPriority.UserReject;
+                        Context.TraceContext.SamplingDecision = new SamplingDecision(SamplingPriority.UserReject, SamplingMechanism.Manual);
                     }
 
                     break;
@@ -320,7 +322,8 @@ namespace Datadog.Trace
             switch (key)
             {
                 case Trace.Tags.SamplingPriority:
-                    return ((int?)(Context.TraceContext?.SamplingPriority ?? Context.SamplingPriority))?.ToString();
+                    var samplingPriority = Context.TraceContext?.SamplingDecision?.Priority ?? Context.SamplingPriority;
+                    return ((int?)samplingPriority)?.ToString();
                 case Trace.Tags.Origin:
                     return Context.Origin;
                 default:

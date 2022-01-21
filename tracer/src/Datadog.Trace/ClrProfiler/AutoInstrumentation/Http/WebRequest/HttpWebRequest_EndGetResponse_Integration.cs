@@ -10,6 +10,7 @@ using System.Net;
 using Datadog.Trace.ClrProfiler.CallTarget;
 using Datadog.Trace.DuckTyping;
 using Datadog.Trace.ExtensionMethods;
+using Datadog.Trace.Sampling;
 
 namespace Datadog.Trace.ClrProfiler.AutoInstrumentation.Http.WebRequest
 {
@@ -71,18 +72,21 @@ namespace Datadog.Trace.ClrProfiler.AutoInstrumentation.Http.WebRequest
 
                 try
                 {
-                    scope = ScopeFactory.CreateOutboundHttpScope(Tracer.Instance, request.Method, request.RequestUri, WebRequestCommon.IntegrationId, out var tags, traceId: existingSpanContext?.TraceId, spanId: existingSpanContext?.SpanId, startTime);
+                    scope = ScopeFactory.CreateOutboundHttpScope(Tracer.Instance, request.Method, request.RequestUri, WebRequestCommon.IntegrationId, out _, traceId: existingSpanContext?.TraceId, spanId: existingSpanContext?.SpanId, startTime);
 
                     if (scope is not null)
                     {
+                        var span = scope.Span;
+
                         if (setSamplingPriority)
                         {
-                            scope.Span.SetTraceSamplingPriority(existingSpanContext.SamplingPriority.Value);
+                            // TODO: figure out SamplingMechanism, do we propagate that as well for special cases like this?
+                            span.SetTraceSamplingDecision(existingSpanContext.SamplingPriority.Value, SamplingMechanism.Unknown);
                         }
 
                         if (returnValue is HttpWebResponse response)
                         {
-                            scope.Span.SetHttpStatusCode((int)response.StatusCode, false, Tracer.Instance.Settings);
+                            span.SetHttpStatusCode((int)response.StatusCode, isServer: false, Tracer.Instance.Settings);
                         }
 
                         scope.DisposeWithException(exception);
