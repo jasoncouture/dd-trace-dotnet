@@ -68,10 +68,6 @@ namespace Datadog.Trace.ClrProfiler
             }
         }
 
-        SamplingPriority? IDistributedTracer.GetSamplingPriority()
-        {
-            return (SamplingPriority?)_child?.GetSamplingPriority();
-        }
 
         [Obsolete("Use SetSamplingDecision().")]
         void IDistributedTracer.SetSamplingPriority(SamplingPriority? samplingPriority)
