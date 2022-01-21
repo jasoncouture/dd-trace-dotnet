@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Threading;
 using Datadog.Trace.DuckTyping;
 using Datadog.Trace.Logging;
+using Datadog.Trace.Sampling;
 
 namespace Datadog.Trace.ClrProfiler
 {
@@ -19,6 +20,7 @@ namespace Datadog.Trace.ClrProfiler
         private static string _runtimeId;
 
         private ICommonTracer _child;
+        private ICommonTracer2 _child2;
 
         bool IDistributedTracer.IsChildTracer => false;
 
@@ -71,9 +73,31 @@ namespace Datadog.Trace.ClrProfiler
             return (SamplingPriority?)_child?.GetSamplingPriority();
         }
 
+        [Obsolete("Use SetSamplingDecision().")]
         void IDistributedTracer.SetSamplingPriority(SamplingPriority? samplingPriority)
         {
             _child?.SetSamplingPriority((int?)samplingPriority);
+        }
+
+        void IDistributedTracer.SetSamplingDecision(SamplingDecision? samplingDecision)
+        {
+            if (_child2 is not null)
+            {
+                if (samplingDecision is null)
+                {
+                    _child2.ClearSamplingDecision();
+                }
+                else
+                {
+                    var (samplingPriority, samplingMechanism, rate) = (SamplingDecision)samplingDecision;
+                    _child2.SetSamplingDecision((int)samplingPriority, (int)samplingMechanism, rate);
+                }
+            }
+            else
+            {
+                // fall back if ICommonTracer2 is not available
+                _child.SetSamplingPriority((int?)samplingDecision?.Priority);
+            }
         }
 
         string IDistributedTracer.GetRuntimeId() => GetAutomaticRuntimeId();
@@ -115,7 +139,10 @@ namespace Datadog.Trace.ClrProfiler
         public void Register(object manualTracer)
         {
             Log.Information("Registering {child} as child tracer", manualTracer.GetType());
-            _child = manualTracer.DuckCast<ICommonTracer>();
+
+            // try the newest interface first and fall back to older ones if not available
+            _child2 = manualTracer.DuckAs<ICommonTracer2>();
+            _child = _child2 ?? manualTracer.DuckAs<ICommonTracer>();
         }
 
         public string GetAutomaticRuntimeId() => LazyInitializer.EnsureInitialized(ref _runtimeId, () => Guid.NewGuid().ToString());

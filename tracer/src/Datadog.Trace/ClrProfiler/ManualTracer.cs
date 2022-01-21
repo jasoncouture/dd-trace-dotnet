@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using Datadog.Trace.DuckTyping;
 using Datadog.Trace.Logging;
+using Datadog.Trace.Sampling;
 using Datadog.Trace.Util;
 
 namespace Datadog.Trace.ClrProfiler
@@ -16,15 +17,18 @@ namespace Datadog.Trace.ClrProfiler
         private static readonly IDatadogLogger Log = DatadogLogging.GetLoggerFor(typeof(ManualTracer));
 
         private readonly IAutomaticTracer _parent;
+        private readonly IAutomaticTracer2 _parent2;
 
-        internal ManualTracer(IAutomaticTracer parent)
+        internal ManualTracer(object automaticTracer)
         {
-            if (parent is null)
+            if (automaticTracer is null)
             {
-                ThrowHelper.ThrowArgumentNullException(nameof(parent));
+                ThrowHelper.ThrowArgumentNullException(nameof(automaticTracer));
             }
 
-            _parent = parent;
+            // try the newest interface first and fall back to older ones if not available
+            _parent2 = automaticTracer.DuckAs<IAutomaticTracer2>();
+            _parent = _parent2 ?? automaticTracer.DuckAs<IAutomaticTracer>();
             _parent.Register(this);
         }
 
@@ -85,9 +89,31 @@ namespace Datadog.Trace.ClrProfiler
             return (SamplingPriority?)_parent.GetSamplingPriority();
         }
 
+        [Obsolete("Use SetSamplingDecision().")]
         void IDistributedTracer.SetSamplingPriority(SamplingPriority? samplingPriority)
         {
             _parent.SetSamplingPriority((int?)samplingPriority);
+        }
+
+        void IDistributedTracer.SetSamplingDecision(SamplingDecision? samplingDecision)
+        {
+            if (_parent2 is not null)
+            {
+                if (samplingDecision is null)
+                {
+                    _parent2.ClearSamplingDecision();
+                }
+                else
+                {
+                    var (samplingPriority, samplingMechanism, rate) = (SamplingDecision)samplingDecision;
+                    _parent2.SetSamplingDecision((int)samplingPriority, (int)samplingMechanism, rate);
+                }
+            }
+            else
+            {
+                // fall back if IAutomaticTracer2 is not available
+                _parent.SetSamplingPriority((int?)samplingDecision?.Priority);
+            }
         }
 
         string IDistributedTracer.GetRuntimeId() => _parent.GetAutomaticRuntimeId();
