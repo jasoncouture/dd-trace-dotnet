@@ -25,10 +25,11 @@ partial class Build : NukeBuild
 
             void GenerateConditionVariables()
             {
-                GenerateConditionVariableBasedOnGitChange("isDebuggerChanged", new[] { "tracer/src/Datadog.Trace.ClrProfiler.Native/Debugger" });
-                GenerateConditionVariableBasedOnGitChange("isProfilerChanged", new[] { "profiler/src" });
+                GenerateConditionVariableBasedOnGitChange("isTracerChanged", new[] { "tracer/src/Datadog.Trace/ClrProfiler/AutoInstrumentation", "tracer/src/Datadog.Trace.ClrProfiler.Native" }, new[] { "tracer/src/Datadog.Trace.ClrProfiler.Native/Debugger" });
+                GenerateConditionVariableBasedOnGitChange("isDebuggerChanged", new[] { "tracer/src/Datadog.Trace.ClrProfiler.Native/Debugger" }, new string[] { });
+                GenerateConditionVariableBasedOnGitChange("isProfilerChanged", new[] { "profiler/src" }, new string[] { });
 
-                void GenerateConditionVariableBasedOnGitChange(string variableName, string[] filters)
+                void GenerateConditionVariableBasedOnGitChange(string variableName, string[] filters, string[] exclusionFilters)
                 {
                     var masterCommit = GitTasks.Git("merge-base origin/master HEAD").First().Text;
                     var changedFiles =
@@ -38,7 +39,9 @@ partial class Build : NukeBuild
                                .ToArray()
                         ;
 
-                    var isChanged = filters.Any(filter => changedFiles.Any(s => s.Contains(filter)));
+                    var isChanged = changedFiles.Any(s => filters.Any(filter => s.Contains(filter)) && !exclusionFilters.Any(filter => s.Contains(filter)));
+
+                    // Choose changedFiles that meet any of the filters => Choose changedFiles that DON'T meet any of the exclusion filters
 
                     Logger.Info($"{variableName} - {isChanged}");
 
@@ -115,10 +118,16 @@ partial class Build : NukeBuild
 
             void GenerateExplorationTestMatrices()
             {
+                var isTracerChanged = bool.Parse(EnvironmentInfo.GetVariable<string>("isTracerChanged") ?? "false");
                 var isDebuggerChanged = bool.Parse(EnvironmentInfo.GetVariable<string>("isDebuggerChanged") ?? "false");
                 var isProfilerChanged = bool.Parse(EnvironmentInfo.GetVariable<string>("isProfilerChanged") ?? "false");
 
                 var useCases = new List<string>();
+                if (isTracerChanged)
+                {
+                    useCases.Add(global::ExplorationTestUseCase.Tracer.ToString());
+                }
+
                 if (isDebuggerChanged)
                 {
                     useCases.Add(global::ExplorationTestUseCase.Debugger.ToString());
