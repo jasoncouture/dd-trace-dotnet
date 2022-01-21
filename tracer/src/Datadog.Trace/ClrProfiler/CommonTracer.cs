@@ -3,6 +3,7 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/). Copyright 2017 Datadog, Inc.
 // </copyright>
 
+using System;
 using Datadog.Trace.Sampling;
 
 namespace Datadog.Trace.ClrProfiler
@@ -13,11 +14,15 @@ namespace Datadog.Trace.ClrProfiler
     /// </summary>
     internal abstract class CommonTracer : ICommonTracer2
     {
+        // Not used anymore. Keep it for backwards compat with ICommonTracer.
+        [Obsolete]
         public int? GetSamplingPriority()
         {
             return (int?)Tracer.Instance.InternalActiveScope?.Span.Context?.TraceContext?.SamplingDecision?.Priority;
         }
 
+        // Not used anymore. Keep it for backwards compat with ICommonTracer.
+        [Obsolete]
         public void SetSamplingPriority(int? samplingPriority)
         {
             if (samplingPriority is null)

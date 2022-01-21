@@ -28,7 +28,9 @@ namespace Datadog.Trace.ClrProfiler
 
             // try the newest interface first and fall back to older ones if not available
             _parent2 = automaticTracer.DuckAs<IAutomaticTracer2>();
-            _parent = _parent2 ?? automaticTracer.DuckAs<IAutomaticTracer>();
+
+            // IAutomaticTracer is required as the lowest common denominator
+            _parent = _parent2 ?? automaticTracer.DuckCast<IAutomaticTracer>();
             _parent.Register(this);
         }
 
@@ -84,8 +86,8 @@ namespace Datadog.Trace.ClrProfiler
             _parent.SetDistributedTrace(value);
         }
 
-
-        [Obsolete("Use SetSamplingDecision().")]
+        // Not used anymore. Keep it for backwards compat.
+        // Use IDistributedTracer.SetSamplingDecision() instead.
         void IDistributedTracer.SetSamplingPriority(SamplingPriority? samplingPriority)
         {
             _parent.SetSamplingPriority((int?)samplingPriority);

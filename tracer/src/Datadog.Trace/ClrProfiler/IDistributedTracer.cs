@@ -21,7 +21,8 @@ namespace Datadog.Trace.ClrProfiler
 
         void SetSpanContext(IReadOnlyDictionary<string, string> value);
 
-        [Obsolete("Use SetSamplingDecision().")]
+        // Not used anymore. Keep it for backwards compat.
+        // Use IDistributedTracer.SetSamplingDecision() instead.
         void SetSamplingPriority(SamplingPriority? samplingPriority);
 
         void SetSamplingDecision(SamplingDecision? samplingDecision);

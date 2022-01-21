@@ -68,8 +68,8 @@ namespace Datadog.Trace.ClrProfiler
             }
         }
 
-
-        [Obsolete("Use SetSamplingDecision().")]
+        // Not used anymore. Keep it for backwards compat.
+        // Use IDistributedTracer.SetSamplingDecision() instead.
         void IDistributedTracer.SetSamplingPriority(SamplingPriority? samplingPriority)
         {
             _child?.SetSamplingPriority((int?)samplingPriority);
