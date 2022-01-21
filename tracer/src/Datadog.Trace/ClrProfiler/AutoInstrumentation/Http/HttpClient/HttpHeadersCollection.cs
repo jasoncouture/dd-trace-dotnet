@@ -36,6 +36,7 @@ namespace Datadog.Trace.ClrProfiler.AutoInstrumentation.Http.HttpClient
 
         public void Set(string name, string value)
         {
+            // TODO: Remove. This is an innocuous change to trigger the exploration_tests
             _headers.Remove(name);
             _headers.Add(name, value);
         }
