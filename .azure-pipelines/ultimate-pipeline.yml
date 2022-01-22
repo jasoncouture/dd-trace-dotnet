@@ -78,10 +78,10 @@ schedules:
 variables:
   buildConfiguration: Release
   dotnetCoreSdkLatestVersion: 6.0.100
-  relativeTracerHome: /tracer/src/bin/windows-tracer-home
+  relativeTracerHome: /shared/bin/monitoring-home/Tracer
   relativeArtifacts: /tracer/src/bin/artifacts
   ddTracerHome: $(System.DefaultWorkingDirectory)/tracer/src/bin/dd-tracer-home
-  tracerHome: $(System.DefaultWorkingDirectory)/tracer/src/bin/windows-tracer-home
+  tracerHome: $(System.DefaultWorkingDirectory)/shared/bin/monitoring-home/Tracer
   profilerSrcDirectory: $(System.DefaultWorkingDirectory)/../dd-continuous-profiler-dotnet
   profilerHome: $(System.DefaultWorkingDirectory)/profiler/bin/profiler-home # Important, put the profiler assets into the working directory so it can be saved across build stages more easily
   monitoringHome: $(System.DefaultWorkingDirectory)/shared/bin/monitoring-home
