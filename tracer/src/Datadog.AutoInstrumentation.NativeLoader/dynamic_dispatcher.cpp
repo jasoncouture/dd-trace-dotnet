@@ -82,7 +82,7 @@ namespace datadog::shared::nativeloader
             Warn("DynamicDispatcherImpl::LoadConfiguration: Configuration file doesn't exist.");
             return;
         }
-
+        Info("DynamicDispatcherImpl::LoadConfiguration: Reading configuration file from: ", configFilePath);
         std::ifstream t(configFilePath);
 
         // Gets the configuration file folder
@@ -112,7 +112,7 @@ namespace datadog::shared::nativeloader
             {
                 Debug(line);
 
-                if (line[0] == '#')
+                if (line[0] == '#' || IsEmptyOrWhitespace(line))
                 {
                     continue;
                 }

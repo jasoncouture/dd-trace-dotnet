@@ -183,3 +183,8 @@ std::vector<std::string> Split(const std::string& s, char delim)
     Split(s, delim, std::back_inserter(elems));
     return elems;
 }
+
+bool IsEmptyOrWhitespace(const std::string& s)
+{
+    return s.find_first_not_of(WhiteSpaceChars) == str.npos;
+}
