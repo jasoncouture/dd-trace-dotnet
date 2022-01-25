@@ -22,6 +22,7 @@ namespace Datadog.Trace
         private readonly long _timestamp = Stopwatch.GetTimestamp();
         private ArrayBuilder<Span> _spans;
         private int _openSpans;
+        private SamplingDecision? _upstreamSamplingDecision;
         private SamplingDecision? _samplingDecision;
 
         public TraceContext(IDatadogTracer tracer)
