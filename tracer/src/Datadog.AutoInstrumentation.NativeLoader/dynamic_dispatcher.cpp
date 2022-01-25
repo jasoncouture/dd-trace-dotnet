@@ -135,7 +135,7 @@ namespace datadog::shared::nativeloader
                         // Convert possible relative paths to absolute paths using the configuration file folder as base
                         // (current_path)
                         std::string absoluteFilepathValue = std::filesystem::absolute(filepathValue).string();
-                        Debug("DynamicDispatcherImpl::LoadConfiguration: [", type, "] Loading: ", filepathValue, " [AbsolutePath=", absoluteFilepathValue,"]");
+                        Info("DynamicDispatcherImpl::LoadConfiguration: [", type, "] Loading: ", filepathValue, " [AbsolutePath=", absoluteFilepathValue,"]");
                         if (std::filesystem::exists(absoluteFilepathValue))
                         {
                             Debug("[", type, "] Creating a new DynamicInstance object");
@@ -169,7 +169,7 @@ namespace datadog::shared::nativeloader
                         else
                         {
                             Warn("DynamicDispatcherImpl::LoadConfiguration: [", type, "] Dynamic library for '", absoluteFilepathValue,
-                                 "' cannot be loadeds, file doesn't exist.");
+                                 "' cannot be loaded, file doesn't exist.");
                         }
                     }
                     else
