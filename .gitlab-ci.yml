@@ -7,9 +7,6 @@ variables:
   DATADOG_AGENT_WINBUILDIMAGES: v5996510-a9e6a7d
     
 build:
-  only:
-    - master
-    - main
   stage: build
   tags: ["runner:windows-docker", "windowsversion:1809"]
   script:
