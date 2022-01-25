@@ -28,7 +28,7 @@ build:
     - artifacts
 
 publish:
-  stage: publish_artifacts
+  stage: publish
   dependencies: 
     - build
   script:
