@@ -27,7 +27,7 @@ publish:
     - build
   script:
     - echo $(aws sts assume-role --role-arn "arn:aws:iam::486234852809:role/ci-datadog-windows-filter" --role-session-name AWSCLI-Session)
-    - temp_credentials="$(aws sts assume-role --role-arn "arn:aws:iam::486234852809:role/ci-datadog-windows-filter" --role-session-name AWSCLI-Session)"
+    - SET temp_credentials="$(aws sts assume-role --role-arn "arn:aws:iam::486234852809:role/ci-datadog-windows-filter" --role-session-name AWSCLI-Session)"
     - export AWS_ACCESS_KEY_ID=$(echo "$temp_credentials" | jq -r .Credentials.AccessKeyId)
     - export AWS_SECRET_ACCESS_KEY=$(echo "$temp_credentials" | jq -r .Credentials.SecretAccessKey)
     - export AWS_SESSION_TOKEN=$(echo "$temp_credentials" | jq -r .Credentials.SessionToken)
