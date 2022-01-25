@@ -12,9 +12,8 @@ build:
   script:
     - if (Test-Path build-out) { remove-item -recurse -force build-out }
     - if (Test-Path artifacts) { remove-item -recurse -force artifacts }
-    - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.ddbuild.io/DataDog/dd-continuous-profiler-dotnet.git
     - mkdir artifacts
-    - touch artifacts/test.txt
+    - echo some-text  > artifacts/test.txt
     - get-childitem build-out
     - get-childitem artifacts
   artifacts:
