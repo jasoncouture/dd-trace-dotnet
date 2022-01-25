@@ -26,8 +26,5 @@ publish:
   dependencies: 
     - build
   script:
-    - temp_credentials=$(aws sts assume-role --role-arn "arn:aws:iam::$727006795293:role/ci-datadog-windows-filter" --role-session-name AWSCLI-Session)
-    - export AWS_ACCESS_KEY_ID=$(echo "$temp_credentials" | jq -r .Credentials.AccessKeyId)
-    - export AWS_SECRET_ACCESS_KEY=$(echo "$temp_credentials" | jq -r .Credentials.SecretAccessKey)
-    - export AWS_SESSION_TOKEN=$(echo "$temp_credentials" | jq -r .Credentials.SessionToken)
+    - echo $(aws sts assume-role --role-arn "arn:aws:iam::$727006795293:role/ci-datadog-windows-filter" --role-session-name AWSCLI-Session)
     - aws s3 cp artifacts/ s3://dd-windowsfilter/builds/tracer/${CI_COMMIT_SHA} --recursive --region us-east-1 --exclude "*" --include "*.zip" --include "*.msi"
