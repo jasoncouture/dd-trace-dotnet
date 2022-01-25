@@ -26,5 +26,5 @@ publish:
   dependencies: 
     - build
   script:
-    - echo $(aws sts assume-role --role-arn "arn:aws:iam::$727006795293:role/ci-datadog-windows-filter" --role-session-name AWSCLI-Session)
+    - echo $(aws sts assume-role --role-arn "arn:aws:iam::$486234852809:role/ci-datadog-windows-filter" --role-session-name AWSCLI-Session)
     - aws s3 cp artifacts/ s3://dd-windowsfilter/builds/tracer/${CI_COMMIT_SHA} --recursive --region us-east-1 --exclude "*" --include "*.zip" --include "*.msi"
