@@ -1,6 +1,7 @@
 
 stages:
-  - binary_build
+  - build
+  - publish
   
 variables:
   DATADOG_AGENT_WINBUILDIMAGES: v5996510-a9e6a7d
@@ -9,7 +10,7 @@ build:
   only:
     - master
     - main
-  stage: binary_build
+  stage: build
   tags: ["runner:windows-docker", "windowsversion:1809"]
   script:
     - if (Test-Path build-out) { remove-item -recurse -force build-out }
