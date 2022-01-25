@@ -13,10 +13,8 @@ build:
     - if (Test-Path build-out) { remove-item -recurse -force build-out }
     - if (Test-Path artifacts) { remove-item -recurse -force artifacts }
     - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.ddbuild.io/DataDog/dd-continuous-profiler-dotnet.git
-    - docker run --rm -m 4096M -v "$(Get-Location):c:\mnt" -e CI_JOB_ID=${CI_JOB_ID} -e WINDOWS_BUILDER=true -e AWS_NETWORKING=true -e SIGN_WINDOWS=true 486234852809.dkr.ecr.us-east-1.amazonaws.com/ci/datadog-agent-buildimages/windows_1809_x64:$Env:DATADOG_AGENT_WINBUILDIMAGES c:\mnt\tracer\build\_build\gitlab.bat
     - mkdir artifacts
-    - xcopy /e/s build-out\${CI_JOB_ID}\*.* artifacts
-    - remove-item -recurse -force build-out\${CI_JOB_ID}
+    - touch artifacts/test.txt
     - get-childitem build-out
     - get-childitem artifacts
   artifacts:
@@ -30,4 +28,8 @@ publish:
   dependencies: 
     - build
   script:
+    - temp_credentials=$(aws sts assume-role --role-arn "arn:aws:iam::$727006795293:role/ci-datadog-windows-filter" --role-session-name AWSCLI-Session)
+    - export AWS_ACCESS_KEY_ID=$(echo "$temp_credentials" | jq -r .Credentials.AccessKeyId)
+    - export AWS_SECRET_ACCESS_KEY=$(echo "$temp_credentials" | jq -r .Credentials.SecretAccessKey)
+    - export AWS_SESSION_TOKEN=$(echo "$temp_credentials" | jq -r .Credentials.SessionToken)
     - aws s3 cp artifacts/ s3://dd-windowsfilter/builds/tracer/${CI_COMMIT_SHA} --recursive --region us-east-1 --exclude "*" --include "*.zip" --include "*.msi"
