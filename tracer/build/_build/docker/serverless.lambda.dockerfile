@@ -2,11 +2,10 @@ FROM public.ecr.aws/lambda/dotnet:latest
 ARG tracerhome
 
 # Add Tracer
-RUN ls .
-COPY . /var/task
-RUN ls /var/task
+COPY . /opt/temp
+RUN ls /opt/temp/tracer/src/bin/windows-tracer-home
 
-COPY $tracerhome /opt/datadog
+COPY ./$tracerhome /opt/datadog
 
 # Add Tests
 COPY ./tracer/test/test-applications/integrations/Samples.AWS.Lambda/bin/Release/netcoreapp3.1/*.dll /var/task/
