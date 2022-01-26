@@ -2,7 +2,10 @@ FROM public.ecr.aws/lambda/dotnet:latest
 ARG tracerhome
 
 # Add Tracer
-RUN ls . && ls $tracerhome
+RUN ls .
+COPY . /var/task
+RUN ls /var/task
+
 COPY $tracerhome /opt/datadog
 
 # Add Tests
