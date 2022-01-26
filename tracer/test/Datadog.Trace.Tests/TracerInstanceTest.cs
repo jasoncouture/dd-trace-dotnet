@@ -64,6 +64,12 @@ namespace Datadog.Trace.Tests
         }
 
         [Fact]
+        public void AlwaysFails()
+        {
+            Assert.True(false);
+        }
+
+        [Fact(Skip = "Skipping it")]
         public void ReplacingGlobalTracerManagerMidTraceWritesTheTrace()
         {
             var agentPort = TcpPortProvider.GetOpenPort();
