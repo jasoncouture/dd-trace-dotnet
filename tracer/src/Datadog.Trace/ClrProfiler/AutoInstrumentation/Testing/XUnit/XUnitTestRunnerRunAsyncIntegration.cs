@@ -39,7 +39,7 @@ namespace Datadog.Trace.ClrProfiler.AutoInstrumentation.Testing.XUnit
                 // Skip test support
                 if (runnerInstance.SkipReason != null)
                 {
-                    XUnitIntegration.CreateScope(ref runnerInstance, instance.GetType());
+                    XUnitIntegration.CreateScope(ref runnerInstance, instance.GetType(), Tracer.Instance);
                 }
             }
 

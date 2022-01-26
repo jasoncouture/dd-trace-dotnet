@@ -52,7 +52,7 @@ namespace Datadog.Trace.ClrProfiler.AutoInstrumentation.Testing.XUnit
                 TestMethodArguments = invokerInstance.TestMethodArguments
             };
 
-            return new CallTargetState(XUnitIntegration.CreateScope(ref runnerInstance, instance.GetType()));
+            return new CallTargetState(XUnitIntegration.CreateScope(ref runnerInstance, instance.GetType(), Tracer.Instance));
         }
 
         /// <summary>

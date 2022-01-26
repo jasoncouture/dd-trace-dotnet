@@ -20,14 +20,14 @@ namespace Datadog.Trace.ClrProfiler.AutoInstrumentation.Testing.XUnit
 
         internal static bool IsEnabled => CIVisibility.IsRunning && Tracer.Instance.Settings.IsIntegrationEnabled(IntegrationId);
 
-        internal static Scope CreateScope(ref TestRunnerStruct runnerInstance, Type targetType)
+        internal static Scope CreateScope(ref TestRunnerStruct runnerInstance, Type targetType, Tracer tracer)
         {
             string testSuite = runnerInstance.TestClass.ToString();
             string testName = runnerInstance.TestMethod.Name;
 
             string testFramework = "xUnit";
 
-            Scope scope = Tracer.Instance.StartActiveInternal("xunit.test", serviceName: Tracer.Instance.DefaultServiceName);
+            Scope scope = tracer.StartActiveInternal("xunit.test", serviceName: tracer.DefaultServiceName);
             Span span = scope.Span;
 
             span.Type = SpanTypes.Test;
