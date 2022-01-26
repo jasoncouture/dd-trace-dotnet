@@ -276,7 +276,7 @@ services:
       context: ./
       dockerfile: ./tracer/build/_build/docker/serverless.lambda.dockerfile
       args:
-        - tracerhome=/project/${relativeTracerHome:-tracer/src/bin/windows-tracer-home}
+        - tracerhome=/${relativeTracerHome:-tracer/src/bin/windows-tracer-home}
     depends_on:
       - serverless-integration-trace-context-mock
     command: "Samples.AWS.Lambda::Samples.AWS.Lambda.Function::Handler"
