@@ -5,8 +5,8 @@ ARG tracerhome
 COPY $tracerhome /opt/datadog
 
 # Add Tests
-COPY ./test/test-applications/integrations/Samples.AWS.Lambda/bin/Release/netcoreapp3.1/*.dll /var/task/
-COPY ./test/test-applications/integrations/Samples.AWS.Lambda/bin/Release/netcoreapp3.1/*.deps.json /var/task/
+COPY ./tracer/test/test-applications/integrations/Samples.AWS.Lambda/bin/Release/netcoreapp3.1/*.dll /var/task/
+COPY ./tracer/test/test-applications/integrations/Samples.AWS.Lambda/bin/Release/netcoreapp3.1/*.deps.json /var/task/
 
 RUN mkdir -p /var/log/datadog/dotnet && chmod a+rwx /var/log/datadog/dotnet
 
