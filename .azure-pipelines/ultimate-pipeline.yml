@@ -366,12 +366,17 @@ stages:
   dependsOn: build_windows_tracer
   pool:
     vmImage: windows-2019
+
   jobs:
     - template: steps/update-github-status-jobs.yml
       parameters:
         jobs: [managed, native]
 
     - job: managed
+
+      services:
+        dd_agent: dd_agent
+
       steps:
       - template: steps/install-dotnet.yml
       - template: steps/restore-working-directory.yml
@@ -530,6 +535,9 @@ stages:
     strategy:
       matrix: $[stageDependencies.generate_variables.generate_variables_job.outputs['generate_variables_step.integration_tests_windows_matrix'] ]
 
+    services:
+      dd_agent: dd_agent
+
     steps:
     - template: steps/install-dotnet-sdks.yml
       parameters:
@@ -587,6 +595,9 @@ stages:
       vmImage: windows-2019
     variables:
       relativeMsiOutputDirectory: $(relativeArtifacts)/$(targetPlatform)/en-us
+
+    services:
+      dd_agent: dd_agent
 
     steps:
 
@@ -1115,6 +1126,7 @@ stages:
 
 - stage: tool_artifacts_tests_windows
   dependsOn: [dotnet_tool]
+
   variables:
     runnerTool: $(System.DefaultWorkingDirectory)/$(relativeRunnerTool)
     runnerStandalone: $(System.DefaultWorkingDirectory)/$(relativeRunnerStandalone)
@@ -1133,6 +1145,9 @@ stages:
 
     pool:
       vmImage: windows-2019
+
+    services:
+      dd_agent: dd_agent
 
     steps:
     - template: steps/install-latest-dotnet-sdk.yml
